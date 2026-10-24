@@ -3,7 +3,14 @@ import 'dart:io';
 import 'package:camera/camera.dart';
 import 'package:flutter/material.dart';
 
-enum _CamState { loading, ready, permissionDenied, permissionBlocked, noCamera, error }
+enum _CamState {
+  loading,
+  ready,
+  permissionDenied,
+  permissionBlocked,
+  noCamera,
+  error,
+}
 
 /// Chụp 1 ảnh. Khi bấm "Xong" sẽ pop về đường dẫn file ảnh (String).
 class CameraScreen extends StatefulWidget {
@@ -64,7 +71,7 @@ class _CameraScreenState extends State<CameraScreen>
       );
       final controller = CameraController(
         back,
-        ResolutionPreset.high,
+        ResolutionPreset.medium,
         enableAudio: false,
       );
       _controller = controller;
@@ -83,8 +90,7 @@ class _CameraScreenState extends State<CameraScreen>
         _state = switch (e.code) {
           'CameraAccessDenied' => _CamState.permissionDenied,
           'CameraAccessDeniedWithoutPrompt' ||
-          'CameraAccessRestricted' =>
-            _CamState.permissionBlocked,
+          'CameraAccessRestricted' => _CamState.permissionBlocked,
           _ => _CamState.error,
         };
       });
@@ -153,7 +159,8 @@ class _CameraScreenState extends State<CameraScreen>
       case _CamState.permissionBlocked:
         return _Message(
           icon: Icons.no_photography_rounded,
-          text: 'Camera đang bị tắt.\nNhờ bố mẹ bật quyền Camera trong '
+          text:
+              'Camera đang bị tắt.\nNhờ bố mẹ bật quyền Camera trong '
               'Cài đặt của máy nhé!',
           primaryLabel: 'Thử lại',
           onPrimary: _initCamera,
@@ -180,9 +187,7 @@ class _CameraScreenState extends State<CameraScreen>
     return Column(
       children: [
         Expanded(
-          child: ClipRect(
-            child: Center(child: CameraPreview(controller)),
-          ),
+          child: ClipRect(child: Center(child: CameraPreview(controller))),
         ),
         Padding(
           padding: const EdgeInsets.symmetric(vertical: 20),
@@ -210,9 +215,7 @@ class _CameraScreenState extends State<CameraScreen>
   Widget _buildReview(XFile photo) {
     return Column(
       children: [
-        Expanded(
-          child: Image.file(File(photo.path), fit: BoxFit.contain),
-        ),
+        Expanded(child: Image.file(File(photo.path), fit: BoxFit.contain)),
         Padding(
           padding: const EdgeInsets.all(20),
           child: Row(

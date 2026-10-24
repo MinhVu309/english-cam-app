@@ -5,13 +5,17 @@ import '../../core/router.dart';
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
 
+  /// Camera -> kết quả; "Chụp lại" ở màn kết quả quay về camera.
   Future<void> _openCamera(BuildContext context) async {
-    final path = await Navigator.of(context).pushNamed<String>(Routes.camera);
-    if (path != null && context.mounted) {
-      // Phase B sẽ đưa ảnh này vào bộ nhận diện.
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Đã chụp xong! Phần nhận diện sắp có.')),
+    final navigator = Navigator.of(context);
+    while (true) {
+      final path = await navigator.pushNamed<String>(Routes.camera);
+      if (path == null || !navigator.mounted) return;
+      final retake = await navigator.pushNamed<bool>(
+        Routes.result,
+        arguments: path,
       );
+      if (retake != true) return;
     }
   }
 
@@ -33,8 +37,8 @@ class HomeScreen extends StatelessWidget {
               Text(
                 'English Cam',
                 style: Theme.of(context).textTheme.headlineLarge?.copyWith(
-                      fontWeight: FontWeight.w800,
-                    ),
+                  fontWeight: FontWeight.w800,
+                ),
               ),
               const SizedBox(height: 20),
               Expanded(
