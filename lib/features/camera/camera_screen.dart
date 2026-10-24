@@ -27,6 +27,15 @@ class _CameraScreenState extends State<CameraScreen>
   XFile? _photo;
   bool _capturing = false;
 
+  /// Đang khởi tạo (kể cả lúc hộp thoại xin quyền hiện ra).
+  bool _initializing = false;
+
+  /// Camera đã bị mình giải phóng khi app xuống nền, cần mở lại khi quay về.
+  bool _releasedForBackground = false;
+
+  /// Android không báo riêng "chặn hẳn", nên từ chối 2 lần liên tiếp coi như bị chặn.
+  int _deniedCount = 0;
+
   @override
   void initState() {
     super.initState();
@@ -37,28 +46,46 @@ class _CameraScreenState extends State<CameraScreen>
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
-    _controller?.dispose();
+    _release(_controller);
+    _controller = null;
     super.dispose();
   }
 
+  /// Hộp thoại xin quyền cũng làm app `inactive`; khi đó không được giải phóng
+  /// camera đang khởi tạo dở, nên chỉ xử lý lúc camera đã sẵn sàng.
   @override
   void didChangeAppLifecycleState(AppLifecycleState lifecycle) {
-    final controller = _controller;
     if (lifecycle == AppLifecycleState.inactive) {
-      // Giải phóng camera khi app bị che / chuyển nền.
-      _controller = null;
-      controller?.dispose();
-    } else if (lifecycle == AppLifecycleState.resumed &&
-        _controller == null &&
-        _photo == null) {
-      // Người dùng có thể vừa cấp quyền trong Cài đặt.
-      _initCamera();
+      if (_state == _CamState.ready && _controller != null) {
+        _release(_controller);
+        _controller = null;
+        _releasedForBackground = true;
+        setState(() => _state = _CamState.loading);
+      }
+    } else if (lifecycle == AppLifecycleState.resumed) {
+      final fromSettings = _state == _CamState.permissionBlocked;
+      if (!_initializing &&
+          _photo == null &&
+          (_releasedForBackground || fromSettings)) {
+        _initCamera();
+      }
+    }
+  }
+
+  Future<void> _release(CameraController? controller) async {
+    try {
+      await controller?.dispose();
+    } catch (e) {
+      debugPrint('Camera dispose failed: $e');
     }
   }
 
   Future<void> _initCamera() async {
-    if (!mounted) return;
+    if (!mounted || _initializing) return;
+    _initializing = true;
+    _releasedForBackground = false;
     setState(() => _state = _CamState.loading);
+    CameraController? controller;
     try {
       final cameras = await availableCameras();
       if (cameras.isEmpty) {
@@ -69,35 +96,43 @@ class _CameraScreenState extends State<CameraScreen>
         (c) => c.lensDirection == CameraLensDirection.back,
         orElse: () => cameras.first,
       );
-      final controller = CameraController(
+      controller = CameraController(
         back,
         ResolutionPreset.medium,
         enableAudio: false,
       );
       _controller = controller;
       await controller.initialize();
-      if (!mounted || _controller != controller) {
-        // Màn hình đã đóng hoặc controller đã bị thay thế trong lúc khởi tạo.
-        if (_controller != controller) await controller.dispose();
+      if (!mounted) {
+        _controller = null;
+        await _release(controller);
         return;
       }
+      _deniedCount = 0;
       setState(() => _state = _CamState.ready);
     } on CameraException catch (e) {
-      _controller?.dispose();
+      debugPrint('Camera init failed: ${e.code} / ${e.description}');
       _controller = null;
+      await _release(controller);
       if (!mounted) return;
+      if (e.code == 'CameraAccessDenied') _deniedCount++;
       setState(() {
         _state = switch (e.code) {
-          'CameraAccessDenied' => _CamState.permissionDenied,
+          'CameraAccessDenied' when _deniedCount < 2 =>
+            _CamState.permissionDenied,
+          'CameraAccessDenied' ||
           'CameraAccessDeniedWithoutPrompt' ||
           'CameraAccessRestricted' => _CamState.permissionBlocked,
           _ => _CamState.error,
         };
       });
-    } catch (_) {
-      _controller?.dispose();
+    } catch (e, st) {
+      debugPrint('Camera init failed: $e\n$st');
       _controller = null;
+      await _release(controller);
       if (mounted) setState(() => _state = _CamState.error);
+    } finally {
+      _initializing = false;
     }
   }
 
