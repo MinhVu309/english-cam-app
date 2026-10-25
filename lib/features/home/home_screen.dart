@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../core/router.dart';
+import '../camera/captured_photo.dart';
 
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
@@ -9,11 +10,11 @@ class HomeScreen extends StatelessWidget {
   Future<void> _openCamera(BuildContext context) async {
     final navigator = Navigator.of(context);
     while (true) {
-      final path = await navigator.pushNamed<String>(Routes.camera);
-      if (path == null || !navigator.mounted) return;
+      final photo = await navigator.pushNamed<CapturedPhoto>(Routes.camera);
+      if (photo == null || !navigator.mounted) return;
       final retake = await navigator.pushNamed<bool>(
         Routes.result,
-        arguments: path,
+        arguments: photo,
       );
       if (retake != true) return;
     }
@@ -55,7 +56,7 @@ class HomeScreen extends StatelessWidget {
                   icon: Icons.menu_book_rounded,
                   label: 'Từ vựng',
                   color: const Color(0xFF4CB8A8),
-                  onTap: () => _comingSoon(context),
+                  onTap: () => Navigator.of(context).pushNamed(Routes.vocab),
                 ),
               ),
               const SizedBox(height: 16),

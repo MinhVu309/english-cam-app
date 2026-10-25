@@ -96,9 +96,10 @@ class ClassifierService {
     _isolate = await IsolateInterpreter.create(address: interpreter.address);
   }
 
-  Future<ClassificationResult> classifyFile(String path) async {
+  /// [crop]: vùng khung ngắm (chuẩn hoá 0–1); null = cả ảnh.
+  Future<ClassificationResult> classifyFile(String path, {Rect? crop}) async {
     final sw = Stopwatch()..start();
-    final input = await preprocessImageFile(path);
+    final input = await preprocessImageFile(path, crop: crop);
     return classifyPixels(input, stopwatch: sw);
   }
 

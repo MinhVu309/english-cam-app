@@ -3,6 +3,9 @@ import 'dart:io';
 import 'package:camera/camera.dart';
 import 'package:flutter/material.dart';
 
+import 'captured_photo.dart';
+import 'frame_overlay.dart';
+
 enum _CamState {
   loading,
   ready,
@@ -12,7 +15,7 @@ enum _CamState {
   error,
 }
 
-/// Chụp 1 ảnh. Khi bấm "Xong" sẽ pop về đường dẫn file ảnh (String).
+/// Chụp 1 ảnh trong khung ngắm. Bấm "Xong" sẽ pop về [CapturedPhoto].
 class CameraScreen extends StatefulWidget {
   const CameraScreen({super.key});
 
@@ -25,6 +28,9 @@ class _CameraScreenState extends State<CameraScreen>
   CameraController? _controller;
   _CamState _state = _CamState.loading;
   XFile? _photo;
+
+  /// Khung ngắm (chuẩn hoá) theo kích thước vùng xem trước hiện tại.
+  Rect _frame = const Rect.fromLTWH(0.14, 0.14, 0.72, 0.72);
   bool _capturing = false;
 
   /// Đang khởi tạo (kể cả lúc hộp thoại xin quyền hiện ra).
@@ -222,7 +228,21 @@ class _CameraScreenState extends State<CameraScreen>
     return Column(
       children: [
         Expanded(
-          child: ClipRect(child: Center(child: CameraPreview(controller))),
+          child: ClipRect(
+            child: Center(
+              child: CameraPreview(
+                controller,
+                // Lớp phủ nằm đúng trên vùng xem trước, nên toạ độ khung ngắm
+                // chuẩn hoá cũng đúng trên ảnh chụp.
+                child: LayoutBuilder(
+                  builder: (context, box) {
+                    _frame = frameRectNormalized(box.biggest);
+                    return FrameOverlay(rect: _frame);
+                  },
+                ),
+              ),
+            ),
+          ),
         ),
         Padding(
           padding: const EdgeInsets.symmetric(vertical: 20),
@@ -269,7 +289,9 @@ class _CameraScreenState extends State<CameraScreen>
               const SizedBox(width: 16),
               Expanded(
                 child: FilledButton.icon(
-                  onPressed: () => Navigator.of(context).pop(photo.path),
+                  onPressed: () => Navigator.of(
+                    context,
+                  ).pop(CapturedPhoto(photo.path, _frame)),
                   icon: const Icon(Icons.check_rounded),
                   label: const Text('Xong'),
                 ),

@@ -5,11 +5,15 @@ import 'package:flutter/services.dart';
 
 import 'core/router.dart';
 import 'core/theme.dart';
+import 'data/vocab_repository.dart';
 import 'ml/classifier_service.dart';
+import 'services/progress_service.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
+  await VocabRepository.load();
+  await ProgressService.instance.init();
   // Nạp model sẵn để lần chụp đầu tiên không bị chậm; lỗi sẽ hiện ở màn kết quả.
   unawaited(ClassifierService.instance.init().catchError((Object _) {}));
   runApp(const EnglishCamApp());
