@@ -18,7 +18,7 @@ enum Sfx {
 }
 
 const String _kMusicAsset = 'audio/music/bg.mp3';
-const double _kMusicVolume = 0.25;
+const double _kMusicVolume = 0.5;
 
 /// Phát âm thanh đóng gói sẵn trong app (từ, câu ví dụ, hiệu ứng, nhạc nền).
 /// Mọi lỗi phát được nuốt và ghi log để app không bao giờ crash vì âm thanh.
@@ -57,6 +57,7 @@ class AudioService with WidgetsBindingObserver {
       debugPrint('Audio prefs failed: $e');
     }
     if (disabled) return;
+    debugPrint('Audio init: setAudioContext');
     try {
       // Cho phép nhạc nền, giọng đọc và hiệu ứng phát cùng lúc, không giành focus.
       await AudioPlayer.global.setAudioContext(
@@ -67,6 +68,7 @@ class AudioService with WidgetsBindingObserver {
     } catch (e) {
       debugPrint('Audio context failed: $e');
     }
+    debugPrint('Audio init: context done, musicOn=${musicOn.value}');
     WidgetsBinding.instance.addObserver(this);
     if (musicOn.value) await _startMusic();
   }
@@ -103,7 +105,7 @@ class AudioService with WidgetsBindingObserver {
     try {
       final p = _sfxPlayer;
       await p.stop();
-      await p.play(AssetSource(sfx.asset), volume: 0.8);
+      await p.play(AssetSource(sfx.asset), volume: 1.0);
     } catch (e) {
       debugPrint('Sfx failed (${sfx.name}): $e');
     }
@@ -132,8 +134,11 @@ class AudioService with WidgetsBindingObserver {
     if (disabled) return;
     try {
       final p = _musicPlayer;
+      debugPrint('Music: setReleaseMode');
       await p.setReleaseMode(ReleaseMode.loop);
+      debugPrint('Music: play');
       await p.play(AssetSource(_kMusicAsset), volume: _kMusicVolume);
+      debugPrint('Music: playing');
     } catch (e) {
       debugPrint('Music failed: $e');
     }

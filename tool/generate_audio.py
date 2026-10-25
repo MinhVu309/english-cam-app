@@ -150,7 +150,7 @@ def main() -> None:
             to_mp3(wav, AUDIO / "sfx" / f"{name}.mp3", "loudnorm=I=-18:TP=-1.5:LRA=7")
         wav = Path(tmp) / "bg.wav"
         write_wav(wav, music())
-        to_mp3(wav, AUDIO / "music" / "bg.mp3", "loudnorm=I=-24:TP=-2:LRA=7", "128k")
+        to_mp3(wav, AUDIO / "music" / "bg.mp3", "loudnorm=I=-20:TP=-2:LRA=7", "128k")
     print("sfx + music done")
 
 
