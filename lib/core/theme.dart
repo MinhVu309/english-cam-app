@@ -22,6 +22,12 @@ ThemeData buildAppTheme() {
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(28)),
       ),
     ),
+    textButtonTheme: TextButtonThemeData(
+      style: TextButton.styleFrom(
+        minimumSize: const Size(64, 56),
+        textStyle: const TextStyle(fontSize: 20, fontWeight: FontWeight.w700),
+      ),
+    ),
     outlinedButtonTheme: OutlinedButtonThemeData(
       style: OutlinedButton.styleFrom(
         minimumSize: const Size(64, 56),

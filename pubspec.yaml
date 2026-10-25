@@ -66,6 +66,7 @@ flutter:
   assets:
     - assets/ml/
     - assets/vocab/
+    - assets/game/
     - assets/images/
     - assets/audio/words/
     - assets/audio/examples/

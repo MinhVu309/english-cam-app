@@ -1,6 +1,8 @@
+import 'package:english_cam/data/game_badge.dart';
 import 'package:english_cam/data/vocab_repository.dart';
 import 'package:english_cam/main.dart';
 import 'package:english_cam/services/audio_service.dart';
+import 'package:english_cam/services/game_progress.dart';
 import 'package:english_cam/services/progress_service.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -12,6 +14,8 @@ void main() {
     SharedPreferences.setMockInitialValues({});
     AudioService.instance.disabled = true;
     await VocabRepository.load();
+    await BadgeRepository.load();
+    GameProgress.instance.resetForTest();
     await ProgressService.instance.init();
   });
 
@@ -23,13 +27,14 @@ void main() {
     expect(find.text('Chơi'), findsOneWidget);
   });
 
-  testWidgets('Nút chưa làm hiện thông báo "Sắp có"', (tester) async {
+  testWidgets('Nút Chơi mở màn chọn game', (tester) async {
     await tester.pumpWidget(const EnglishCamApp());
 
     await tester.tap(find.text('Chơi'));
-    await tester.pump();
+    await tester.pumpAndSettle();
 
-    expect(find.text('Sắp có nhé!'), findsOneWidget);
+    expect(find.text('Nghe & chọn hình'), findsOneWidget);
+    expect(find.text('Tìm vật'), findsOneWidget);
   });
 
   testWidgets('Nút Từ vựng mở danh sách', (tester) async {

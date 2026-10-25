@@ -44,7 +44,8 @@
       "image": null,
       "audio": "assets/audio/words/book.mp3",
       "exampleAudio": "assets/audio/examples/book.mp3",
-      "category": "school"
+      "category": "school",
+      "hunt": true
     },
     {
       "id": "pen",
@@ -58,7 +59,8 @@
       "image": null,
       "audio": "assets/audio/words/pen.mp3",
       "exampleAudio": "assets/audio/examples/pen.mp3",
-      "category": "school"
+      "category": "school",
+      "hunt": true
     },
     {
       "id": "bag",
@@ -72,7 +74,8 @@
       "image": null,
       "audio": "assets/audio/words/bag.mp3",
       "exampleAudio": "assets/audio/examples/bag.mp3",
-      "category": "school"
+      "category": "school",
+      "hunt": true
     },
     {
       "id": "ruler",
@@ -86,7 +89,8 @@
       "image": null,
       "audio": "assets/audio/words/ruler.mp3",
       "exampleAudio": "assets/audio/examples/ruler.mp3",
-      "category": "school"
+      "category": "school",
+      "hunt": true
     },
     {
       "id": "scissors",
@@ -100,7 +104,8 @@
       "image": null,
       "audio": "assets/audio/words/scissors.mp3",
       "exampleAudio": "assets/audio/examples/scissors.mp3",
-      "category": "school"
+      "category": "school",
+      "hunt": true
     },
     {
       "id": "clock",
@@ -114,7 +119,8 @@
       "image": null,
       "audio": "assets/audio/words/clock.mp3",
       "exampleAudio": "assets/audio/examples/clock.mp3",
-      "category": "home"
+      "category": "home",
+      "hunt": true
     },
     {
       "id": "cup",
@@ -128,7 +134,8 @@
       "image": null,
       "audio": "assets/audio/words/cup.mp3",
       "exampleAudio": "assets/audio/examples/cup.mp3",
-      "category": "home"
+      "category": "home",
+      "hunt": true
     },
     {
       "id": "bottle",
@@ -142,7 +149,8 @@
       "image": null,
       "audio": "assets/audio/words/bottle.mp3",
       "exampleAudio": "assets/audio/examples/bottle.mp3",
-      "category": "home"
+      "category": "home",
+      "hunt": true
     },
     {
       "id": "chair",
@@ -156,7 +164,8 @@
       "image": null,
       "audio": "assets/audio/words/chair.mp3",
       "exampleAudio": "assets/audio/examples/chair.mp3",
-      "category": "home"
+      "category": "home",
+      "hunt": true
     },
     {
       "id": "table",
@@ -170,7 +179,8 @@
       "image": null,
       "audio": "assets/audio/words/table.mp3",
       "exampleAudio": "assets/audio/examples/table.mp3",
-      "category": "home"
+      "category": "home",
+      "hunt": false
     },
     {
       "id": "bowl",
@@ -184,7 +194,8 @@
       "image": null,
       "audio": "assets/audio/words/bowl.mp3",
       "exampleAudio": "assets/audio/examples/bowl.mp3",
-      "category": "home"
+      "category": "home",
+      "hunt": true
     },
     {
       "id": "spoon",
@@ -198,7 +209,8 @@
       "image": null,
       "audio": "assets/audio/words/spoon.mp3",
       "exampleAudio": "assets/audio/examples/spoon.mp3",
-      "category": "home"
+      "category": "home",
+      "hunt": true
     },
     {
       "id": "toothbrush",
@@ -212,7 +224,8 @@
       "image": null,
       "audio": "assets/audio/words/toothbrush.mp3",
       "exampleAudio": "assets/audio/examples/toothbrush.mp3",
-      "category": "home"
+      "category": "home",
+      "hunt": true
     },
     {
       "id": "towel",
@@ -226,7 +239,8 @@
       "image": null,
       "audio": "assets/audio/words/towel.mp3",
       "exampleAudio": "assets/audio/examples/towel.mp3",
-      "category": "home"
+      "category": "home",
+      "hunt": true
     },
     {
       "id": "shoe",
@@ -240,7 +254,8 @@
       "image": null,
       "audio": "assets/audio/words/shoe.mp3",
       "exampleAudio": "assets/audio/examples/shoe.mp3",
-      "category": "clothes"
+      "category": "clothes",
+      "hunt": true
     },
     {
       "id": "hat",
@@ -254,7 +269,8 @@
       "image": null,
       "audio": "assets/audio/words/hat.mp3",
       "exampleAudio": "assets/audio/examples/hat.mp3",
-      "category": "clothes"
+      "category": "clothes",
+      "hunt": true
     },
     {
       "id": "glasses",
@@ -268,7 +284,8 @@
       "image": null,
       "audio": "assets/audio/words/glasses.mp3",
       "exampleAudio": "assets/audio/examples/glasses.mp3",
-      "category": "clothes"
+      "category": "clothes",
+      "hunt": true
     },
     {
       "id": "umbrella",
@@ -282,7 +299,8 @@
       "image": null,
       "audio": "assets/audio/words/umbrella.mp3",
       "exampleAudio": "assets/audio/examples/umbrella.mp3",
-      "category": "clothes"
+      "category": "clothes",
+      "hunt": true
     },
     {
       "id": "apple",
@@ -296,7 +314,8 @@
       "image": null,
       "audio": "assets/audio/words/apple.mp3",
       "exampleAudio": "assets/audio/examples/apple.mp3",
-      "category": "fruit"
+      "category": "fruit",
+      "hunt": false
     },
     {
       "id": "banana",
@@ -310,7 +329,8 @@
       "image": null,
       "audio": "assets/audio/words/banana.mp3",
       "exampleAudio": "assets/audio/examples/banana.mp3",
-      "category": "fruit"
+      "category": "fruit",
+      "hunt": true
     },
     {
       "id": "orange",
@@ -324,7 +344,8 @@
       "image": null,
       "audio": "assets/audio/words/orange.mp3",
       "exampleAudio": "assets/audio/examples/orange.mp3",
-      "category": "fruit"
+      "category": "fruit",
+      "hunt": true
     },
     {
       "id": "ball",
@@ -338,7 +359,8 @@
       "image": null,
       "audio": "assets/audio/words/ball.mp3",
       "exampleAudio": "assets/audio/examples/ball.mp3",
-      "category": "toys"
+      "category": "toys",
+      "hunt": true
     },
     {
       "id": "teddy_bear",
@@ -352,7 +374,8 @@
       "image": null,
       "audio": "assets/audio/words/teddy_bear.mp3",
       "exampleAudio": "assets/audio/examples/teddy_bear.mp3",
-      "category": "toys"
+      "category": "toys",
+      "hunt": true
     },
     {
       "id": "toy_car",
@@ -366,7 +389,8 @@
       "image": null,
       "audio": "assets/audio/words/toy_car.mp3",
       "exampleAudio": "assets/audio/examples/toy_car.mp3",
-      "category": "toys"
+      "category": "toys",
+      "hunt": true
     }
   ]
 }

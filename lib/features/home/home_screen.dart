@@ -20,12 +20,6 @@ class HomeScreen extends StatelessWidget {
     }
   }
 
-  void _comingSoon(BuildContext context) {
-    ScaffoldMessenger.of(context)
-      ..hideCurrentSnackBar()
-      ..showSnackBar(const SnackBar(content: Text('Sắp có nhé!')));
-  }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -73,7 +67,7 @@ class HomeScreen extends StatelessWidget {
                   icon: Icons.sports_esports_rounded,
                   label: 'Chơi',
                   color: const Color(0xFF7C6FE0),
-                  onTap: () => _comingSoon(context),
+                  onTap: () => Navigator.of(context).pushNamed(Routes.games),
                 ),
               ),
             ],

@@ -33,6 +33,7 @@ class VocabWord {
     this.exampleAudio,
     this.image,
     this.emoji,
+    this.hunt = true,
   });
 
   factory VocabWord.fromJson(Map<String, dynamic> j) => VocabWord(
@@ -48,6 +49,7 @@ class VocabWord {
     category: j['category'] as String,
     image: j['image'] as String?,
     emoji: j['emoji'] as String?,
+    hunt: j['hunt'] as bool? ?? true,
   );
 
   /// Khoá nội bộ, cũng là tên file âm thanh.
@@ -69,4 +71,10 @@ class VocabWord {
   /// Ảnh minh hoạ (asset). Nếu không có thì dùng [emoji], cuối cùng là chữ cái.
   final String? image;
   final String? emoji;
+
+  /// Có dùng làm đích của game "Tìm vật" không (chỉ nhãn model nhận ổn định).
+  final bool hunt;
+
+  /// Có hình minh hoạ thật (ảnh hoặc emoji), dùng được trong game "Nghe & chọn hình".
+  bool get hasPicture => image != null || emoji != null;
 }

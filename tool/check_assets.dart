@@ -63,6 +63,10 @@ void main(List<String> args) {
       errors.add('[$id] category "${w['category']}" không có trong categories');
     }
 
+    if (w.containsKey('hunt') && w['hunt'] is! bool) {
+      errors.add('[$id] "hunt" phải là true/false');
+    }
+
     // Hình minh hoạ: ảnh asset (phải tồn tại nếu khai báo) hoặc emoji.
     final image = w['image'] as String?;
     final emoji = w['emoji'] as String?;
@@ -82,6 +86,43 @@ void main(List<String> args) {
       }
       if (!File(path).existsSync()) {
         (requireAudio ? errors : warnings).add('[$id] thiếu file $key $path');
+      }
+    }
+  }
+
+  // Game: đủ từ cho "Tìm vật" và "Nghe & chọn hình", huy hiệu hợp lệ.
+  final huntCount = words.where((w) => w['hunt'] != false).length;
+  if (huntCount < 5) {
+    errors.add(
+      'Game "Tìm vật" cần ít nhất 5 từ có hunt=true (đang có $huntCount)',
+    );
+  }
+  final pictureCount = words
+      .where((w) => w['image'] != null || w['emoji'] != null)
+      .length;
+  if (pictureCount < 4) {
+    errors.add(
+      'Game "Nghe & chọn hình" cần ít nhất 4 từ có hình (đang có $pictureCount)',
+    );
+  }
+  final badgesFile = File('assets/game/badges.json');
+  if (!badgesFile.existsSync()) {
+    errors.add('Thiếu assets/game/badges.json');
+  } else {
+    const metrics = {'stars', 'rounds', 'perfect', 'found', 'learned'};
+    final badgeIds = <String>{};
+    final badges =
+        (jsonDecode(badgesFile.readAsStringSync())
+                as Map<String, dynamic>)['badges']
+            as List<dynamic>;
+    for (final b in badges.cast<Map<String, dynamic>>()) {
+      final id = b['id'] as String? ?? '?';
+      if (!badgeIds.add(id)) errors.add('[huy hiệu $id] id bị trùng');
+      if (!metrics.contains(b['metric'])) {
+        errors.add('[huy hiệu $id] metric "${b['metric']}" không hợp lệ');
+      }
+      if (b['threshold'] is! int || (b['threshold'] as int) < 1) {
+        errors.add('[huy hiệu $id] threshold phải là số nguyên >= 1');
       }
     }
   }
