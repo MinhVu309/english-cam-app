@@ -6,12 +6,16 @@ import '../features/game/game_hub_screen.dart';
 import '../features/game/hunt/hunt_game_screen.dart';
 import '../features/game/match/matching_game_screen.dart';
 import '../features/home/home_screen.dart';
+import '../features/onboarding/onboarding_screen.dart';
+import '../features/settings/settings_screen.dart';
 import '../features/result/result_screen.dart';
 import '../features/vocab/vocab_detail_screen.dart';
 import '../features/vocab/vocab_list_screen.dart';
 
 abstract final class Routes {
   static const home = '/';
+  static const onboarding = '/onboarding';
+  static const settings = '/settings';
   static const camera = '/camera';
   static const result = '/result';
   static const vocab = '/vocab';
@@ -58,6 +62,17 @@ Route<dynamic> onGenerateRoute(RouteSettings settings) {
       return MaterialPageRoute<void>(
         settings: settings,
         builder: (_) => const HuntGameScreen(),
+      );
+    case Routes.onboarding:
+      return MaterialPageRoute<void>(
+        settings: settings,
+        builder: (_) =>
+            OnboardingScreen(replay: settings.arguments as bool? ?? false),
+      );
+    case Routes.settings:
+      return MaterialPageRoute<void>(
+        settings: settings,
+        builder: (_) => const SettingsScreen(),
       );
     case Routes.home:
     default:

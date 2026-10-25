@@ -38,5 +38,16 @@ class ProgressService extends ChangeNotifier {
     }
   }
 
+  /// Xoá toàn bộ từ đã học.
+  Future<void> clear() async {
+    _learned.clear();
+    notifyListeners();
+    try {
+      await _prefs?.remove(_kLearnedKey);
+    } catch (e) {
+      debugPrint('Progress clear failed: $e');
+    }
+  }
+
   Future<void> toggle(String id) => setLearned(id, !isLearned(id));
 }

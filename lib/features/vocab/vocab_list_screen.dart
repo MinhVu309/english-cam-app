@@ -4,6 +4,7 @@ import '../../core/router.dart';
 import '../../data/vocab_repository.dart';
 import '../../data/vocab_word.dart';
 import '../../services/progress_service.dart';
+import '../mascot/mascot.dart';
 import 'word_visual.dart';
 
 class VocabListScreen extends StatefulWidget {
@@ -137,10 +138,17 @@ class _VocabListScreenState extends State<VocabListScreen> {
       return const Center(
         child: Padding(
           padding: EdgeInsets.all(32),
-          child: Text(
-            'Chưa tìm thấy từ nào.\nThử gõ từ khác nhé!',
-            textAlign: TextAlign.center,
-            style: TextStyle(fontSize: 22),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Mascot(mood: MascotMood.thinking, size: 140),
+              SizedBox(height: 12),
+              Text(
+                'Chưa tìm thấy từ nào.\nThử gõ từ khác nhé!',
+                textAlign: TextAlign.center,
+                style: TextStyle(fontSize: 22),
+              ),
+            ],
           ),
         ),
       );

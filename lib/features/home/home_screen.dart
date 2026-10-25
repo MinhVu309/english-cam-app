@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
 
+import '../../core/palette.dart';
 import '../../core/router.dart';
 import '../../services/audio_service.dart';
+import '../mascot/mascot.dart';
+import '../settings/parent_gate.dart';
 
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
@@ -31,13 +34,22 @@ class HomeScreen extends StatelessWidget {
               const SizedBox(height: 8),
               Row(
                 children: [
-                  const SizedBox(width: 56),
+                  const _SettingsButton(),
                   Expanded(
-                    child: Text(
-                      'English Cam',
-                      textAlign: TextAlign.center,
-                      style: Theme.of(context).textTheme.headlineLarge
-                          ?.copyWith(fontWeight: FontWeight.w800),
+                    child: FittedBox(
+                      fit: BoxFit.scaleDown,
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Mascot(size: 56),
+                          const SizedBox(width: 6),
+                          Text(
+                            'English Cam',
+                            style: Theme.of(context).textTheme.headlineMedium
+                                ?.copyWith(fontWeight: FontWeight.w800),
+                          ),
+                        ],
+                      ),
                     ),
                   ),
                   const _MusicButton(),
@@ -48,7 +60,7 @@ class HomeScreen extends StatelessWidget {
                 child: _BigButton(
                   icon: Icons.photo_camera_rounded,
                   label: 'Chụp & Học',
-                  color: const Color(0xFFFF8A3D),
+                  color: Palette.orange,
                   onTap: () => _openCamera(context),
                 ),
               ),
@@ -57,7 +69,7 @@ class HomeScreen extends StatelessWidget {
                 child: _BigButton(
                   icon: Icons.menu_book_rounded,
                   label: 'Từ vựng',
-                  color: const Color(0xFF4CB8A8),
+                  color: Palette.teal,
                   onTap: () => Navigator.of(context).pushNamed(Routes.vocab),
                 ),
               ),
@@ -66,7 +78,7 @@ class HomeScreen extends StatelessWidget {
                 child: _BigButton(
                   icon: Icons.sports_esports_rounded,
                   label: 'Chơi',
-                  color: const Color(0xFF7C6FE0),
+                  color: Palette.purple,
                   onTap: () => Navigator.of(context).pushNamed(Routes.games),
                 ),
               ),
@@ -143,6 +155,27 @@ class _MusicButton extends StatelessWidget {
         icon: Icon(on ? Icons.music_note_rounded : Icons.music_off_rounded),
         onPressed: () => AudioService.instance.setMusicOn(!on),
       ),
+    );
+  }
+}
+
+/// Mở Cài đặt, nhưng phải qua cổng phụ huynh.
+class _SettingsButton extends StatelessWidget {
+  const _SettingsButton();
+
+  @override
+  Widget build(BuildContext context) {
+    return IconButton.filledTonal(
+      iconSize: 28,
+      constraints: const BoxConstraints.tightFor(width: 56, height: 56),
+      tooltip: 'Cài đặt (dành cho bố mẹ)',
+      icon: const Icon(Icons.settings_rounded),
+      onPressed: () async {
+        final ok = await showParentGate(context);
+        if (ok && context.mounted) {
+          Navigator.of(context).pushNamed(Routes.settings);
+        }
+      },
     );
   }
 }

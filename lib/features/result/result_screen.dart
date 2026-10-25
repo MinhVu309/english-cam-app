@@ -9,6 +9,7 @@ import '../../data/vocab_word.dart';
 import '../../ml/classifier_service.dart';
 import '../../ml/object_localizer.dart';
 import '../../services/audio_service.dart';
+import '../mascot/mascot.dart';
 import '../vocab/word_visual.dart';
 import 'detection_box_painter.dart';
 
@@ -214,10 +215,16 @@ class _ResultScreenState extends State<ResultScreen> {
           if (word != null)
             _WordBanner(word: word)
           else
-            const Text(
-              'Mình chưa chắc, thử chụp lại nhé!',
-              textAlign: TextAlign.center,
-              style: TextStyle(fontSize: 26, fontWeight: FontWeight.w700),
+            const Column(
+              children: [
+                Mascot(mood: MascotMood.thinking, size: 72),
+                SizedBox(height: 4),
+                Text(
+                  'Mình chưa chắc, thử chụp lại nhé!',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(fontSize: 26, fontWeight: FontWeight.w700),
+                ),
+              ],
             ),
           if (kDebugMode)
             Padding(
@@ -225,7 +232,7 @@ class _ResultScreenState extends State<ResultScreen> {
               child: Text(
                 '${r.inferenceMs} ms · ${r.top.map((p) => '${p.label} ${(p.probability * 100).toStringAsFixed(0)}%').join(', ')}',
                 textAlign: TextAlign.center,
-                style: const TextStyle(fontSize: 12, color: Colors.black54),
+                style: const TextStyle(fontSize: 18, color: Colors.black54),
               ),
             ),
           const SizedBox(height: 16),
@@ -315,7 +322,7 @@ class _SearchingChip extends StatelessWidget {
             SizedBox(width: 10),
             Text(
               'Đang tìm vật…',
-              style: TextStyle(color: Colors.white, fontSize: 16),
+              style: TextStyle(color: Colors.white, fontSize: 18),
             ),
           ],
         ),
@@ -394,6 +401,8 @@ class _ErrorView extends StatelessWidget {
     return Column(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
+        const Mascot(mood: MascotMood.oops, size: 96),
+        const SizedBox(height: 8),
         const Text(
           'Có lỗi rồi, thử lại nhé!',
           style: TextStyle(fontSize: 24, fontWeight: FontWeight.w700),

@@ -63,10 +63,16 @@ flutter:
   # the material Icons class.
   uses-material-design: true
 
+  fonts:
+    - family: Nunito
+      fonts:
+        - asset: assets/fonts/Nunito.ttf
+
   assets:
     - assets/ml/
     - assets/vocab/
     - assets/game/
+    - assets/fonts/OFL.txt
     - assets/images/
     - assets/audio/words/
     - assets/audio/examples/

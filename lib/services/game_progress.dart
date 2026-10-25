@@ -47,6 +47,14 @@ class GameProgress extends ChangeNotifier {
     badges.clear();
   }
 
+  /// Xoá sao, số ván và huy hiệu (bố mẹ chọn "Xoá tiến độ").
+  Future<void> reset() async {
+    stars = rounds = perfectRounds = found = 0;
+    badges.clear();
+    notifyListeners();
+    await _save();
+  }
+
   bool hasBadge(String id) => badges.contains(id);
 
   int _metric(String name) => switch (name) {

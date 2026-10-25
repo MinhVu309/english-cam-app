@@ -2,6 +2,7 @@ import 'package:english_cam/data/game_badge.dart';
 import 'package:english_cam/data/vocab_repository.dart';
 import 'package:english_cam/main.dart';
 import 'package:english_cam/services/audio_service.dart';
+import 'package:english_cam/services/app_settings.dart';
 import 'package:english_cam/services/game_progress.dart';
 import 'package:english_cam/services/progress_service.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -11,7 +12,8 @@ void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
   setUp(() async {
-    SharedPreferences.setMockInitialValues({});
+    SharedPreferences.setMockInitialValues({'onboarding_done': true});
+    await AppSettings.instance.init();
     AudioService.instance.disabled = true;
     await VocabRepository.load();
     await BadgeRepository.load();

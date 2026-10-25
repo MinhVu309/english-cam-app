@@ -3,6 +3,8 @@ import 'dart:io';
 import 'package:camera/camera.dart';
 import 'package:flutter/material.dart';
 
+import '../mascot/mascot.dart';
+
 enum _CamState {
   loading,
   ready,
@@ -186,14 +188,14 @@ class _CameraScreenState extends State<CameraScreen>
         return _buildPreview();
       case _CamState.permissionDenied:
         return _Message(
-          icon: Icons.no_photography_rounded,
+          mood: MascotMood.thinking,
           text: 'Mình cần dùng camera để chụp hình nhé!',
           primaryLabel: 'Cho phép',
           onPrimary: _initCamera,
         );
       case _CamState.permissionBlocked:
         return _Message(
-          icon: Icons.no_photography_rounded,
+          mood: MascotMood.thinking,
           text:
               'Camera đang bị tắt.\nNhờ bố mẹ bật quyền Camera trong '
               'Cài đặt của máy nhé!',
@@ -202,14 +204,14 @@ class _CameraScreenState extends State<CameraScreen>
         );
       case _CamState.noCamera:
         return _Message(
-          icon: Icons.videocam_off_rounded,
+          mood: MascotMood.oops,
           text: 'Máy này không tìm thấy camera.',
           primaryLabel: 'Thử lại',
           onPrimary: _initCamera,
         );
       case _CamState.error:
         return _Message(
-          icon: Icons.error_outline_rounded,
+          mood: MascotMood.oops,
           text: 'Có lỗi với camera rồi.',
           primaryLabel: 'Thử lại',
           onPrimary: _initCamera,
@@ -284,13 +286,13 @@ class _CameraScreenState extends State<CameraScreen>
 
 class _Message extends StatelessWidget {
   const _Message({
-    required this.icon,
+    required this.mood,
     required this.text,
     required this.primaryLabel,
     required this.onPrimary,
   });
 
-  final IconData icon;
+  final MascotMood mood;
   final String text;
   final String primaryLabel;
   final VoidCallback onPrimary;
@@ -303,7 +305,7 @@ class _Message extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(icon, size: 96, color: Colors.white70),
+            Mascot(mood: mood, size: 140),
             const SizedBox(height: 16),
             Text(
               text,

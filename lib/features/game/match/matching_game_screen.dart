@@ -8,6 +8,7 @@ import '../../../data/vocab_repository.dart';
 import '../../../data/vocab_word.dart';
 import '../../../services/audio_service.dart';
 import '../../../services/game_progress.dart';
+import '../../mascot/mascot.dart';
 import '../../vocab/word_visual.dart';
 import '../badge_dialog.dart';
 import 'match_questions.dart';
@@ -155,10 +156,15 @@ class _MatchingGameScreenState extends State<MatchingGameScreen> {
     final q = _question;
     final solved = _correctId != null;
     final message = solved
-        ? 'Giỏi quá! 🎉'
+        ? 'Giỏi quá!'
         : _wrong.isNotEmpty
-        ? 'Chưa đúng, thử lại nhé! 💪'
+        ? 'Chưa đúng, thử lại nhé!'
         : 'Nghe và chọn hình đúng';
+    final mood = solved
+        ? MascotMood.cheer
+        : _wrong.isNotEmpty
+        ? MascotMood.oops
+        : MascotMood.happy;
     return Padding(
       padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
       child: Column(
@@ -184,11 +190,23 @@ class _MatchingGameScreenState extends State<MatchingGameScreen> {
               ),
             ),
           ),
-          const SizedBox(height: 12),
-          Text(
-            message,
-            textAlign: TextAlign.center,
-            style: const TextStyle(fontSize: 24, fontWeight: FontWeight.w700),
+          const SizedBox(height: 8),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Mascot(mood: mood, size: 72),
+              const SizedBox(width: 8),
+              Flexible(
+                child: Text(
+                  message,
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(
+                    fontSize: 24,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ),
+            ],
           ),
           const SizedBox(height: 16),
           Expanded(
@@ -228,7 +246,7 @@ class _MatchingGameScreenState extends State<MatchingGameScreen> {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          const Text('🏆', style: TextStyle(fontSize: 96)),
+          const Mascot(mood: MascotMood.cheer, size: 180),
           const SizedBox(height: 8),
           Text(
             message,

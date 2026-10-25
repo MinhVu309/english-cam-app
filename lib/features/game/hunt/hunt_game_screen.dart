@@ -9,6 +9,7 @@ import '../../../data/vocab_word.dart';
 import '../../../ml/classifier_service.dart';
 import '../../../services/audio_service.dart';
 import '../../../services/game_progress.dart';
+import '../../mascot/mascot.dart';
 import '../../vocab/word_visual.dart';
 import '../badge_dialog.dart';
 import 'hunt_logic.dart';
@@ -241,9 +242,10 @@ class _HuntGameScreenState extends State<HuntGameScreen> {
     return Column(
       children: [
         _photo(),
-        const SizedBox(height: 12),
+        const SizedBox(height: 8),
+        const Mascot(mood: MascotMood.cheer, size: 88),
         Text(
-          'Giỏi quá! Đây là ${_target.en} 🎉',
+          'Giỏi quá! Đây là ${_target.en}',
           textAlign: TextAlign.center,
           style: const TextStyle(fontSize: 28, fontWeight: FontWeight.w800),
         ),
@@ -276,7 +278,8 @@ class _HuntGameScreenState extends State<HuntGameScreen> {
     return Column(
       children: [
         _photo(),
-        const SizedBox(height: 12),
+        const SizedBox(height: 8),
+        const Mascot(mood: MascotMood.oops, size: 88),
         Text(
           _failMessage,
           textAlign: TextAlign.center,

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../core/palette.dart';
 import '../../core/router.dart';
 import '../../data/game_badge.dart';
 import '../../services/audio_service.dart';
@@ -67,14 +68,14 @@ class _GameHubScreenState extends State<GameHubScreen> {
               _GameButton(
                 emoji: '👂',
                 title: 'Nghe & chọn hình',
-                color: const Color(0xFF7C6FE0),
+                color: Palette.purple,
                 onTap: () => Navigator.of(context).pushNamed(Routes.matchGame),
               ),
               const SizedBox(height: 14),
               _GameButton(
                 emoji: '🔍',
                 title: 'Tìm vật',
-                color: const Color(0xFFFF8A3D),
+                color: Palette.orange,
                 onTap: () => Navigator.of(context).pushNamed(Routes.huntGame),
               ),
               const SizedBox(height: 20),
