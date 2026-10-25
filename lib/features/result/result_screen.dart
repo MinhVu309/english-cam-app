@@ -7,14 +7,15 @@ import '../../core/router.dart';
 import '../../data/vocab_repository.dart';
 import '../../data/vocab_word.dart';
 import '../../ml/classifier_service.dart';
-import '../camera/captured_photo.dart';
+import '../../ml/object_localizer.dart';
 import '../vocab/word_visual.dart';
+import 'detection_box_painter.dart';
 
 /// Pop `true` nếu người dùng muốn chụp lại.
 class ResultScreen extends StatefulWidget {
-  const ResultScreen({super.key, required this.photo});
+  const ResultScreen({super.key, required this.imagePath});
 
-  final CapturedPhoto photo;
+  final String imagePath;
 
   @override
   State<ResultScreen> createState() => _ResultScreenState();
@@ -27,19 +28,82 @@ class _ResultScreenState extends State<ResultScreen> {
   String? _override;
   bool _showAlternatives = false;
 
+  /// Khung quanh vật (ước lượng) và trạng thái đang tìm.
+  DetectionBox? _box;
+  bool _locating = false;
+  int _locateToken = 0;
+  bool _disposed = false;
+
+  Size? _imageSize;
+
   @override
   void initState() {
     super.initState();
+    _loadImageSize();
     _future = _classify();
   }
 
-  Future<ClassificationResult> _classify() => ClassifierService.instance
-      .classifyFile(widget.photo.path, crop: widget.photo.crop);
+  @override
+  void dispose() {
+    _disposed = true;
+    super.dispose();
+  }
+
+  void _loadImageSize() {
+    final stream = FileImage(
+      File(widget.imagePath),
+    ).resolve(const ImageConfiguration());
+    late ImageStreamListener listener;
+    listener = ImageStreamListener((info, _) {
+      stream.removeListener(listener);
+      if (_disposed) return;
+      setState(() {
+        _imageSize = Size(
+          info.image.width.toDouble(),
+          info.image.height.toDouble(),
+        );
+      });
+    }, onError: (error, stack) => stream.removeListener(listener));
+    stream.addListener(listener);
+  }
+
+  Future<ClassificationResult> _classify() async {
+    final r = await ClassifierService.instance.classifyFile(widget.imagePath);
+    if (!_disposed && r.isConfident) _locate(r.best.label);
+    return r;
+  }
+
+  /// Tìm khung quanh vật có nhãn [label] (chạy nền, vẽ khi xong).
+  Future<void> _locate(String label) async {
+    final token = ++_locateToken;
+    setState(() {
+      _box = null;
+      _locating = true;
+    });
+    DetectionBox? box;
+    try {
+      box = await ObjectLocalizer.instance.localize(
+        widget.imagePath,
+        label,
+        isCancelled: () => _disposed || token != _locateToken,
+      );
+    } catch (e) {
+      debugPrint('Localize failed: $e');
+    }
+    if (_disposed || token != _locateToken) return;
+    setState(() {
+      _box = box;
+      _locating = false;
+    });
+  }
 
   void _retry() {
     setState(() {
       _override = null;
       _showAlternatives = false;
+      _box = null;
+      _locating = false;
+      _locateToken++;
       _future = _classify();
     });
   }
@@ -60,18 +124,7 @@ class _ResultScreenState extends State<ResultScreen> {
           padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
           child: Column(
             children: [
-              Expanded(
-                flex: 5,
-                child: Center(
-                  child: AspectRatio(
-                    aspectRatio: 1,
-                    child: ClipRRect(
-                      borderRadius: BorderRadius.circular(28),
-                      child: _CroppedPhoto(photo: widget.photo),
-                    ),
-                  ),
-                ),
-              ),
+              Expanded(flex: 5, child: _buildPhoto()),
               const SizedBox(height: 16),
               Expanded(
                 flex: 6,
@@ -92,6 +145,52 @@ class _ResultScreenState extends State<ResultScreen> {
           ),
         ),
       ),
+    );
+  }
+
+  /// Ảnh vừa chụp, có khung vuông quanh vật khi tìm xong.
+  Widget _buildPhoto() {
+    final size = _imageSize;
+    if (size == null) return const SizedBox.shrink();
+    return LayoutBuilder(
+      builder: (context, box) {
+        final fitted = applyBoxFit(BoxFit.contain, size, box.biggest);
+        final w = fitted.destination.width;
+        final h = fitted.destination.height;
+        return Center(
+          child: SizedBox(
+            width: w,
+            height: h,
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(24),
+              child: Stack(
+                fit: StackFit.expand,
+                children: [
+                  Image.file(File(widget.imagePath), fit: BoxFit.fill),
+                  if (_box != null)
+                    TweenAnimationBuilder<double>(
+                      key: ValueKey(_box),
+                      tween: Tween(begin: 0, end: 1),
+                      duration: const Duration(milliseconds: 350),
+                      curve: Curves.easeOutCubic,
+                      builder: (context, t, _) => CustomPaint(
+                        painter: DetectionBoxPainter(_box!.rect, progress: t),
+                      ),
+                    ),
+                  if (_locating)
+                    const Align(
+                      alignment: Alignment.bottomCenter,
+                      child: Padding(
+                        padding: EdgeInsets.all(12),
+                        child: _SearchingChip(),
+                      ),
+                    ),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
     );
   }
 
@@ -139,7 +238,10 @@ class _ResultScreenState extends State<ResultScreen> {
                       vertical: 14,
                     ),
                     selected: label == p.label,
-                    onSelected: (_) => setState(() => _override = p.label),
+                    onSelected: (_) {
+                      setState(() => _override = p.label);
+                      _locate(p.label);
+                    },
                   ),
               ],
             ),
@@ -176,27 +278,35 @@ class _ResultScreenState extends State<ResultScreen> {
   }
 }
 
-/// Hiện đúng vùng khung ngắm mà model đã nhìn.
-class _CroppedPhoto extends StatelessWidget {
-  const _CroppedPhoto({required this.photo});
-
-  final CapturedPhoto photo;
+class _SearchingChip extends StatelessWidget {
+  const _SearchingChip();
 
   @override
   Widget build(BuildContext context) {
-    final c = photo.crop;
-    return FittedBox(
-      fit: BoxFit.cover,
-      clipBehavior: Clip.hardEdge,
-      child: ClipRect(
-        child: Align(
-          alignment: Alignment(
-            c.width >= 1 ? 0 : 2 * c.left / (1 - c.width) - 1,
-            c.height >= 1 ? 0 : 2 * c.top / (1 - c.height) - 1,
-          ),
-          widthFactor: c.width,
-          heightFactor: c.height,
-          child: Image.file(File(photo.path)),
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: Colors.black.withValues(alpha: 0.55),
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: const Padding(
+        padding: EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            SizedBox(
+              width: 18,
+              height: 18,
+              child: CircularProgressIndicator(
+                strokeWidth: 2.5,
+                color: Colors.white,
+              ),
+            ),
+            SizedBox(width: 10),
+            Text(
+              'Đang tìm vật…',
+              style: TextStyle(color: Colors.white, fontSize: 16),
+            ),
+          ],
         ),
       ),
     );

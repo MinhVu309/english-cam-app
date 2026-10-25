@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 
 import '../data/vocab_word.dart';
 import '../features/camera/camera_screen.dart';
-import '../features/camera/captured_photo.dart';
 import '../features/home/home_screen.dart';
 import '../features/result/result_screen.dart';
 import '../features/vocab/vocab_detail_screen.dart';
@@ -19,15 +18,14 @@ abstract final class Routes {
 Route<dynamic> onGenerateRoute(RouteSettings settings) {
   switch (settings.name) {
     case Routes.camera:
-      return MaterialPageRoute<CapturedPhoto>(
+      return MaterialPageRoute<String>(
         settings: settings,
         builder: (_) => const CameraScreen(),
       );
     case Routes.result:
       return MaterialPageRoute<bool>(
         settings: settings,
-        builder: (_) =>
-            ResultScreen(photo: settings.arguments! as CapturedPhoto),
+        builder: (_) => ResultScreen(imagePath: settings.arguments! as String),
       );
     case Routes.vocab:
       return MaterialPageRoute<void>(

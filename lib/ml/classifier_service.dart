@@ -96,10 +96,9 @@ class ClassifierService {
     _isolate = await IsolateInterpreter.create(address: interpreter.address);
   }
 
-  /// [crop]: vùng khung ngắm (chuẩn hoá 0–1); null = cả ảnh.
-  Future<ClassificationResult> classifyFile(String path, {Rect? crop}) async {
+  Future<ClassificationResult> classifyFile(String path) async {
     final sw = Stopwatch()..start();
-    final input = await preprocessImageFile(path, crop: crop);
+    final input = await preprocessImageFile(path);
     return classifyPixels(input, stopwatch: sw);
   }
 
@@ -108,8 +107,18 @@ class ClassifierService {
     Float32List input, {
     Stopwatch? stopwatch,
   }) async {
-    await init();
     final sw = stopwatch ?? (Stopwatch()..start());
+    final probs = await probabilities(input);
+    sw.stop();
+    return ClassificationResult(
+      top: topK(probs, _labels),
+      inferenceMs: sw.elapsedMilliseconds,
+    );
+  }
+
+  /// Xác suất của cả 24 lớp (chỉ số i ↔ dòng i của labels.txt).
+  Future<Float32List> probabilities(Float32List input) async {
+    await init();
     final output = Float32List(_labels.length);
 
     final previous = _queue;
@@ -121,12 +130,7 @@ class ClassifierService {
     } finally {
       done.complete();
     }
-
-    sw.stop();
-    return ClassificationResult(
-      top: topK(output, _labels),
-      inferenceMs: sw.elapsedMilliseconds,
-    );
+    return output;
   }
 
   Future<void> dispose() async {

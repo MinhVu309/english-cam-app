@@ -4,59 +4,60 @@ import 'dart:ui' as ui;
 
 const int kModelInputSize = 224;
 
-/// Đọc ảnh, lấy vùng [crop] (toạ độ chuẩn hoá 0–1, mặc định cả ảnh), resize
-/// thẳng về 224×224 (không giữ tỉ lệ) và trả về buffer float32 RGB, pixel giữ
-/// nguyên 0–255 (model đã tự Rescaling bên trong).
-Future<Float32List> preprocessImageFile(String path, {ui.Rect? crop}) async {
+/// Giải mã file ảnh (đã áp dụng hướng xoay EXIF nếu có). Người gọi phải `dispose()`.
+Future<ui.Image> decodeImageFile(String path) async {
   final bytes = await File(path).readAsBytes();
   final codec = await ui.instantiateImageCodec(bytes);
   try {
     final frame = await codec.getNextFrame();
-    final image = frame.image;
-    try {
-      final w = image.width.toDouble();
-      final h = image.height.toDouble();
-      final src = crop == null
-          ? ui.Rect.fromLTWH(0, 0, w, h)
-          : ui.Rect.fromLTRB(
-              (crop.left * w).clamp(0, w),
-              (crop.top * h).clamp(0, h),
-              (crop.right * w).clamp(0, w),
-              (crop.bottom * h).clamp(0, h),
-            );
-      final recorder = ui.PictureRecorder();
-      ui.Canvas(recorder).drawImageRect(
-        image,
-        src,
-        ui.Rect.fromLTWH(
-          0,
-          0,
-          kModelInputSize.toDouble(),
-          kModelInputSize.toDouble(),
-        ),
-        ui.Paint()..filterQuality = ui.FilterQuality.medium,
-      );
-      final picture = recorder.endRecording();
-      final resized = await picture.toImage(kModelInputSize, kModelInputSize);
-      picture.dispose();
-      try {
-        final data = await resized.toByteData(
-          format: ui.ImageByteFormat.rawRgba,
-        );
-        if (data == null) throw StateError('Không đọc được pixel của ảnh');
-        return rgbaToFloat32Rgb(
-          data.buffer.asUint8List(data.offsetInBytes, data.lengthInBytes),
-          kModelInputSize,
-          kModelInputSize,
-        );
-      } finally {
-        resized.dispose();
-      }
-    } finally {
-      image.dispose();
-    }
+    return frame.image;
   } finally {
     codec.dispose();
+  }
+}
+
+/// Lấy vùng [src] (đơn vị pixel của [image]; mặc định cả ảnh), resize thẳng về
+/// 224×224 (không giữ tỉ lệ) và trả về buffer float32 RGB, pixel giữ nguyên
+/// 0–255 (model đã tự Rescaling bên trong).
+Future<Float32List> imageRegionToFloat32(ui.Image image, {ui.Rect? src}) async {
+  final from =
+      src ??
+      ui.Rect.fromLTWH(0, 0, image.width.toDouble(), image.height.toDouble());
+  final recorder = ui.PictureRecorder();
+  ui.Canvas(recorder).drawImageRect(
+    image,
+    from,
+    ui.Rect.fromLTWH(
+      0,
+      0,
+      kModelInputSize.toDouble(),
+      kModelInputSize.toDouble(),
+    ),
+    ui.Paint()..filterQuality = ui.FilterQuality.medium,
+  );
+  final picture = recorder.endRecording();
+  final resized = await picture.toImage(kModelInputSize, kModelInputSize);
+  picture.dispose();
+  try {
+    final data = await resized.toByteData(format: ui.ImageByteFormat.rawRgba);
+    if (data == null) throw StateError('Không đọc được pixel của ảnh');
+    return rgbaToFloat32Rgb(
+      data.buffer.asUint8List(data.offsetInBytes, data.lengthInBytes),
+      kModelInputSize,
+      kModelInputSize,
+    );
+  } finally {
+    resized.dispose();
+  }
+}
+
+/// Đọc cả file ảnh và tiền xử lý cho model.
+Future<Float32List> preprocessImageFile(String path) async {
+  final image = await decodeImageFile(path);
+  try {
+    return await imageRegionToFloat32(image);
+  } finally {
+    image.dispose();
   }
 }
 

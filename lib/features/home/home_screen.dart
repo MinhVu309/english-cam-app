@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 
 import '../../core/router.dart';
-import '../camera/captured_photo.dart';
 
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
@@ -10,11 +9,11 @@ class HomeScreen extends StatelessWidget {
   Future<void> _openCamera(BuildContext context) async {
     final navigator = Navigator.of(context);
     while (true) {
-      final photo = await navigator.pushNamed<CapturedPhoto>(Routes.camera);
-      if (photo == null || !navigator.mounted) return;
+      final path = await navigator.pushNamed<String>(Routes.camera);
+      if (path == null || !navigator.mounted) return;
       final retake = await navigator.pushNamed<bool>(
         Routes.result,
-        arguments: photo,
+        arguments: path,
       );
       if (retake != true) return;
     }
