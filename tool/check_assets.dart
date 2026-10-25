@@ -1,14 +1,14 @@
 // Kiểm tra nhãn model ↔ vocab.json ↔ ảnh ↔ âm thanh.
 //
-//   dart run tool/check_assets.dart                  # thiếu âm thanh chỉ cảnh báo
-//   dart run tool/check_assets.dart --require-audio  # thiếu âm thanh cũng lỗi
+//   dart run tool/check_assets.dart                  # thiếu âm thanh là lỗi
+//   dart run tool/check_assets.dart --lenient-audio  # thiếu âm thanh chỉ cảnh báo
 //
 // Thoát với mã 1 nếu có lỗi.
 import 'dart:convert';
 import 'dart:io';
 
 void main(List<String> args) {
-  final requireAudio = args.contains('--require-audio');
+  final requireAudio = !args.contains('--lenient-audio');
   final errors = <String>[];
   final warnings = <String>[];
 
@@ -86,6 +86,20 @@ void main(List<String> args) {
     }
   }
 
+  // Hiệu ứng và nhạc nền dùng chung (AudioService).
+  const sharedAudio = [
+    'assets/audio/sfx/tap.mp3',
+    'assets/audio/sfx/correct.mp3',
+    'assets/audio/sfx/wrong.mp3',
+    'assets/audio/sfx/star.mp3',
+    'assets/audio/music/bg.mp3',
+  ];
+  for (final path in sharedAudio) {
+    if (!File(path).existsSync()) {
+      (requireAudio ? errors : warnings).add('thiếu file âm thanh $path');
+    }
+  }
+
   // Mọi nhãn của model phải có từ vựng, và ngược lại.
   for (final l in labels) {
     if (!seenLabels.contains(l)) {
@@ -109,7 +123,7 @@ void main(List<String> args) {
   if (missingAudio > 0) {
     stdout.writeln(
       '  cảnh báo: thiếu $missingAudio file âm thanh '
-      '(dùng --require-audio để coi là lỗi)',
+      '(bỏ --lenient-audio để coi là lỗi)',
     );
   }
   for (final e in errors) {

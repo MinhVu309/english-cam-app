@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../data/vocab_word.dart';
+import '../../services/audio_service.dart';
 import '../../services/progress_service.dart';
 import 'word_visual.dart';
 
@@ -8,12 +9,6 @@ class VocabDetailScreen extends StatelessWidget {
   const VocabDetailScreen({super.key, required this.word});
 
   final VocabWord word;
-
-  void _soon(BuildContext context) {
-    ScaffoldMessenger.of(context)
-      ..hideCurrentSnackBar()
-      ..showSnackBar(const SnackBar(content: Text('Âm thanh sắp có nhé!')));
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -67,7 +62,7 @@ class VocabDetailScreen extends StatelessWidget {
                     ),
                     const SizedBox(height: 12),
                     FilledButton.icon(
-                      onPressed: () => _soon(context),
+                      onPressed: () => AudioService.instance.playWord(word),
                       icon: const Icon(Icons.volume_up_rounded, size: 28),
                       label: const Text('Nghe'),
                     ),
@@ -85,12 +80,29 @@ class VocabDetailScreen extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      word.exampleEn,
-                      style: const TextStyle(
-                        fontSize: 24,
-                        fontWeight: FontWeight.w700,
-                      ),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            word.exampleEn,
+                            style: const TextStyle(
+                              fontSize: 24,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                        ),
+                        IconButton.filledTonal(
+                          iconSize: 28,
+                          constraints: const BoxConstraints.tightFor(
+                            width: 56,
+                            height: 56,
+                          ),
+                          tooltip: 'Nghe câu ví dụ',
+                          icon: const Icon(Icons.volume_up_rounded),
+                          onPressed: () =>
+                              AudioService.instance.playExample(word),
+                        ),
+                      ],
                     ),
                     const SizedBox(height: 4),
                     Text(
@@ -121,8 +133,13 @@ class VocabDetailScreen extends StatelessWidget {
                             label: const Text('Đã học rồi!'),
                           )
                         : FilledButton.icon(
-                            onPressed: () => ProgressService.instance
-                                .setLearned(word.id, true),
+                            onPressed: () {
+                              ProgressService.instance.setLearned(
+                                word.id,
+                                true,
+                              );
+                              AudioService.instance.playSfx(Sfx.star);
+                            },
                             icon: const Icon(Icons.check_rounded),
                             label: const Text('Mình đã học từ này'),
                           ),

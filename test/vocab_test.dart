@@ -2,6 +2,7 @@ import 'package:english_cam/core/theme.dart';
 import 'package:english_cam/data/vocab_repository.dart';
 import 'package:english_cam/features/vocab/vocab_detail_screen.dart';
 import 'package:english_cam/features/vocab/vocab_list_screen.dart';
+import 'package:english_cam/services/audio_service.dart';
 import 'package:english_cam/services/progress_service.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -17,6 +18,7 @@ void main() {
 
   setUp(() async {
     SharedPreferences.setMockInitialValues({});
+    AudioService.instance.disabled = true;
     repo = await VocabRepository.load();
     await ProgressService.instance.init();
   });

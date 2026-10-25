@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../core/router.dart';
+import '../../services/audio_service.dart';
 
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
@@ -34,11 +35,19 @@ class HomeScreen extends StatelessWidget {
           child: Column(
             children: [
               const SizedBox(height: 8),
-              Text(
-                'English Cam',
-                style: Theme.of(context).textTheme.headlineLarge?.copyWith(
-                  fontWeight: FontWeight.w800,
-                ),
+              Row(
+                children: [
+                  const SizedBox(width: 56),
+                  Expanded(
+                    child: Text(
+                      'English Cam',
+                      textAlign: TextAlign.center,
+                      style: Theme.of(context).textTheme.headlineLarge
+                          ?.copyWith(fontWeight: FontWeight.w800),
+                    ),
+                  ),
+                  const _MusicButton(),
+                ],
               ),
               const SizedBox(height: 20),
               Expanded(
@@ -98,7 +107,10 @@ class _BigButton extends StatelessWidget {
         borderRadius: BorderRadius.circular(32),
         child: InkWell(
           borderRadius: BorderRadius.circular(32),
-          onTap: onTap,
+          onTap: () {
+            AudioService.instance.playSfx(Sfx.tap);
+            onTap();
+          },
           child: Center(
             child: Column(
               mainAxisSize: MainAxisSize.min,
@@ -117,6 +129,25 @@ class _BigButton extends StatelessWidget {
             ),
           ),
         ),
+      ),
+    );
+  }
+}
+
+/// Bật/tắt nhạc nền; trạng thái được lưu lại.
+class _MusicButton extends StatelessWidget {
+  const _MusicButton();
+
+  @override
+  Widget build(BuildContext context) {
+    return ValueListenableBuilder<bool>(
+      valueListenable: AudioService.instance.musicOn,
+      builder: (context, on, _) => IconButton.filledTonal(
+        iconSize: 28,
+        constraints: const BoxConstraints.tightFor(width: 56, height: 56),
+        tooltip: on ? 'Tắt nhạc' : 'Bật nhạc',
+        icon: Icon(on ? Icons.music_note_rounded : Icons.music_off_rounded),
+        onPressed: () => AudioService.instance.setMusicOn(!on),
       ),
     );
   }

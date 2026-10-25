@@ -8,6 +8,7 @@ import '../../data/vocab_repository.dart';
 import '../../data/vocab_word.dart';
 import '../../ml/classifier_service.dart';
 import '../../ml/object_localizer.dart';
+import '../../services/audio_service.dart';
 import '../vocab/word_visual.dart';
 import 'detection_box_painter.dart';
 
@@ -69,8 +70,17 @@ class _ResultScreenState extends State<ResultScreen> {
 
   Future<ClassificationResult> _classify() async {
     final r = await ClassifierService.instance.classifyFile(widget.imagePath);
-    if (!_disposed && r.isConfident) _locate(r.best.label);
+    if (!_disposed && r.isConfident) {
+      _locate(r.best.label);
+      _speak(r.best.label);
+    }
     return r;
+  }
+
+  /// Tự đọc từ vừa nhận diện.
+  void _speak(String label) {
+    final word = VocabRepository.instance.byLabel(label);
+    if (word != null) AudioService.instance.playWord(word);
   }
 
   /// Tìm khung quanh vật có nhãn [label] (chạy nền, vẽ khi xong).
@@ -241,6 +251,7 @@ class _ResultScreenState extends State<ResultScreen> {
                     onSelected: (_) {
                       setState(() => _override = p.label);
                       _locate(p.label);
+                      _speak(p.label);
                     },
                   ),
               ],
@@ -355,7 +366,16 @@ class _WordBanner extends StatelessWidget {
                   ],
                 ),
               ),
-              const Icon(Icons.chevron_right_rounded, size: 32),
+              IconButton(
+                iconSize: 32,
+                constraints: const BoxConstraints.tightFor(
+                  width: 56,
+                  height: 56,
+                ),
+                tooltip: 'Nghe lại',
+                icon: const Icon(Icons.volume_up_rounded),
+                onPressed: () => AudioService.instance.playWord(word),
+              ),
             ],
           ),
         ),

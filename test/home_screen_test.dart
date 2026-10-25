@@ -1,5 +1,6 @@
 import 'package:english_cam/data/vocab_repository.dart';
 import 'package:english_cam/main.dart';
+import 'package:english_cam/services/audio_service.dart';
 import 'package:english_cam/services/progress_service.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -9,6 +10,7 @@ void main() {
 
   setUp(() async {
     SharedPreferences.setMockInitialValues({});
+    AudioService.instance.disabled = true;
     await VocabRepository.load();
     await ProgressService.instance.init();
   });
