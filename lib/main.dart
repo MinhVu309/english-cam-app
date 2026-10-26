@@ -6,8 +6,10 @@ import 'package:flutter/services.dart';
 
 import 'core/router.dart';
 import 'core/theme.dart';
+import 'core/widgets/fun_background.dart';
 import 'data/game_badge.dart';
 import 'data/vocab_repository.dart';
+import 'features/mascot/mascot_messages.dart';
 import 'features/startup/startup_error_screen.dart';
 import 'ml/classifier_service.dart';
 import 'services/app_settings.dart';
@@ -31,6 +33,7 @@ Future<void> _start() async {
     });
     await VocabRepository.load();
     await BadgeRepository.load();
+    await MascotMessages.load();
     await AppSettings.instance.init();
     await ProgressService.instance.init();
     await GameProgress.instance.init();
@@ -53,6 +56,7 @@ class EnglishCamApp extends StatelessWidget {
       title: 'English Cam',
       debugShowCheckedModeBanner: false,
       theme: buildAppTheme(),
+      builder: (context, child) => FunBackground(child: child!),
       // Lần đầu mở app: hướng dẫn 3 bước, sau đó vào thẳng Home.
       initialRoute: AppSettings.instance.onboardingDone
           ? Routes.home

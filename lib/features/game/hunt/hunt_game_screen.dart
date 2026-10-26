@@ -3,7 +3,10 @@ import 'dart:math';
 
 import 'package:flutter/material.dart';
 
+import '../../mascot/mascot_host.dart';
+
 import '../../../core/router.dart';
+import '../../../core/widgets/confetti.dart';
 import '../../../data/vocab_repository.dart';
 import '../../../data/vocab_word.dart';
 import '../../../ml/classifier_service.dart';
@@ -127,28 +130,37 @@ class _HuntGameScreenState extends State<HuntGameScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        leading: IconButton(
-          iconSize: 32,
-          tooltip: 'Quay lại',
-          icon: const Icon(Icons.arrow_back_rounded),
-          onPressed: () => Navigator.of(context).maybePop(),
+    return MascotHost(
+      contextKey: 'hunt',
+      alignment: Alignment.bottomLeft,
+      child: Scaffold(
+        appBar: AppBar(
+          leading: IconButton(
+            iconSize: 32,
+            tooltip: 'Quay lại',
+            icon: const Icon(Icons.arrow_back_rounded),
+            onPressed: () => Navigator.of(context).maybePop(),
+          ),
+          title: const Text(
+            'Tìm vật',
+            style: TextStyle(fontSize: 26, fontWeight: FontWeight.w800),
+          ),
         ),
-        title: const Text(
-          'Tìm vật',
-          style: TextStyle(fontSize: 26, fontWeight: FontWeight.w800),
-        ),
-      ),
-      body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
-          child: switch (_phase) {
-            _Phase.prompt => _buildPrompt(),
-            _Phase.checking => _buildChecking(),
-            _Phase.success => _buildSuccess(),
-            _Phase.fail => _buildFail(),
-          },
+        body: SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
+            child: switch (_phase) {
+              _Phase.prompt => _buildPrompt(),
+              _Phase.checking => _buildChecking(),
+              _Phase.success => Stack(
+                children: [
+                  _buildSuccess(),
+                  const Positioned.fill(child: ConfettiBurst(seed: 3)),
+                ],
+              ),
+              _Phase.fail => _buildFail(),
+            },
+          ),
         ),
       ),
     );
@@ -161,6 +173,13 @@ class _HuntGameScreenState extends State<HuntGameScreen> {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(32),
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0xFF8B5A2B).withValues(alpha: 0.18),
+            blurRadius: 16,
+            offset: const Offset(0, 6),
+          ),
+        ],
       ),
       child: Column(
         children: [

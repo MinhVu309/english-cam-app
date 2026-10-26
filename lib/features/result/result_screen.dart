@@ -3,7 +3,10 @@ import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
+import '../mascot/mascot_host.dart';
+
 import '../../core/router.dart';
+import '../../core/widgets/bouncy_tap.dart';
 import '../../data/vocab_repository.dart';
 import '../../data/vocab_word.dart';
 import '../../ml/classifier_service.dart';
@@ -121,38 +124,41 @@ class _ResultScreenState extends State<ResultScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        leading: IconButton(
-          iconSize: 32,
-          tooltip: 'Quay lại',
-          icon: const Icon(Icons.arrow_back_rounded),
-          onPressed: () => Navigator.of(context).pop(false),
+    return MascotHost(
+      contextKey: 'result',
+      child: Scaffold(
+        appBar: AppBar(
+          leading: IconButton(
+            iconSize: 32,
+            tooltip: 'Quay lại',
+            icon: const Icon(Icons.arrow_back_rounded),
+            onPressed: () => Navigator.of(context).pop(false),
+          ),
         ),
-      ),
-      body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
-          child: Column(
-            children: [
-              Expanded(flex: 5, child: _buildPhoto()),
-              const SizedBox(height: 16),
-              Expanded(
-                flex: 6,
-                child: FutureBuilder<ClassificationResult>(
-                  future: _future,
-                  builder: (context, snap) {
-                    if (snap.connectionState != ConnectionState.done) {
-                      return const Center(child: CircularProgressIndicator());
-                    }
-                    if (snap.hasError) {
-                      return _ErrorView(onRetry: _retry);
-                    }
-                    return _buildResult(snap.data!);
-                  },
+        body: SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
+            child: Column(
+              children: [
+                Expanded(flex: 5, child: _buildPhoto()),
+                const SizedBox(height: 16),
+                Expanded(
+                  flex: 6,
+                  child: FutureBuilder<ClassificationResult>(
+                    future: _future,
+                    builder: (context, snap) {
+                      if (snap.connectionState != ConnectionState.done) {
+                        return const Center(child: CircularProgressIndicator());
+                      }
+                      if (snap.hasError) {
+                        return _ErrorView(onRetry: _retry);
+                      }
+                      return _buildResult(snap.data!);
+                    },
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ),
@@ -172,31 +178,43 @@ class _ResultScreenState extends State<ResultScreen> {
           child: SizedBox(
             width: w,
             height: h,
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(24),
-              child: Stack(
-                fit: StackFit.expand,
-                children: [
-                  Image.file(File(widget.imagePath), fit: BoxFit.fill),
-                  if (_box != null)
-                    TweenAnimationBuilder<double>(
-                      key: ValueKey(_box),
-                      tween: Tween(begin: 0, end: 1),
-                      duration: const Duration(milliseconds: 350),
-                      curve: Curves.easeOutCubic,
-                      builder: (context, t, _) => CustomPaint(
-                        painter: DetectionBoxPainter(_box!.rect, progress: t),
-                      ),
-                    ),
-                  if (_locating)
-                    const Align(
-                      alignment: Alignment.bottomCenter,
-                      child: Padding(
-                        padding: EdgeInsets.all(12),
-                        child: _SearchingChip(),
-                      ),
-                    ),
+            child: DecoratedBox(
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(24),
+                boxShadow: [
+                  BoxShadow(
+                    color: const Color(0xFF8B5A2B).withValues(alpha: 0.25),
+                    blurRadius: 16,
+                    offset: const Offset(0, 6),
+                  ),
                 ],
+              ),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(24),
+                child: Stack(
+                  fit: StackFit.expand,
+                  children: [
+                    Image.file(File(widget.imagePath), fit: BoxFit.fill),
+                    if (_box != null)
+                      TweenAnimationBuilder<double>(
+                        key: ValueKey(_box),
+                        tween: Tween(begin: 0, end: 1),
+                        duration: const Duration(milliseconds: 350),
+                        curve: Curves.easeOutCubic,
+                        builder: (context, t, _) => CustomPaint(
+                          painter: DetectionBoxPainter(_box!.rect, progress: t),
+                        ),
+                      ),
+                    if (_locating)
+                      const Align(
+                        alignment: Alignment.bottomCenter,
+                        child: Padding(
+                          padding: EdgeInsets.all(12),
+                          child: _SearchingChip(),
+                        ),
+                      ),
+                  ],
+                ),
               ),
             ),
           ),
@@ -339,52 +357,56 @@ class _WordBanner extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Semantics(
-      button: true,
-      label: '${word.en}, ${word.vi}. Xem chi tiết',
-      child: InkWell(
-        borderRadius: BorderRadius.circular(24),
-        onTap: () => Navigator.of(
-          context,
-        ).pushNamed(Routes.vocabDetail, arguments: word),
-        child: Padding(
-          padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 8),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              WordVisual(word: word, size: 64),
-              const SizedBox(width: 12),
-              Flexible(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      word.en,
-                      style: const TextStyle(
-                        fontSize: 40,
-                        fontWeight: FontWeight.w800,
-                        height: 1.1,
-                      ),
-                    ),
-                    Text(
-                      '${word.phonetic} · ${word.vi}',
-                      style: const TextStyle(fontSize: 18),
-                    ),
-                  ],
-                ),
+    final tint =
+        VocabRepository.instance.category(word.category)?.color ?? Colors.white;
+    return BouncyTap(
+      semanticLabel: '${word.en}, ${word.vi}. Xem chi tiết',
+      color: Color.alphaBlend(Colors.white.withValues(alpha: 0.45), tint),
+      borderRadius: 28,
+      onTap: () =>
+          Navigator.of(context).pushNamed(Routes.vocabDetail, arguments: word),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Container(
+              width: 76,
+              height: 76,
+              decoration: const BoxDecoration(
+                color: Colors.white,
+                shape: BoxShape.circle,
               ),
-              IconButton(
-                iconSize: 32,
-                constraints: const BoxConstraints.tightFor(
-                  width: 56,
-                  height: 56,
-                ),
-                tooltip: 'Nghe lại',
-                icon: const Icon(Icons.volume_up_rounded),
-                onPressed: () => AudioService.instance.playWord(word),
+              child: WordVisual(word: word, size: 64),
+            ),
+            const SizedBox(width: 12),
+            Flexible(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    word.en,
+                    style: const TextStyle(
+                      fontSize: 40,
+                      fontWeight: FontWeight.w900,
+                      height: 1.1,
+                    ),
+                  ),
+                  Text(
+                    '${word.phonetic} · ${word.vi}',
+                    style: const TextStyle(fontSize: 18),
+                  ),
+                ],
               ),
-            ],
-          ),
+            ),
+            IconButton(
+              iconSize: 32,
+              constraints: const BoxConstraints.tightFor(width: 56, height: 56),
+              tooltip: 'Nghe lại',
+              icon: const Icon(Icons.volume_up_rounded),
+              onPressed: () => AudioService.instance.playWord(word),
+            ),
+          ],
         ),
       ),
     );

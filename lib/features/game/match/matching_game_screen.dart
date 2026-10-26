@@ -1,8 +1,14 @@
 import 'dart:async';
 import 'dart:math';
+import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 
+import '../../mascot/mascot_host.dart';
+
+import '../../../core/palette.dart';
+import '../../../core/widgets/bouncy_tap.dart';
+import '../../../core/widgets/confetti.dart';
 import '../../../data/game_badge.dart';
 import '../../../data/vocab_repository.dart';
 import '../../../data/vocab_word.dart';
@@ -115,40 +121,52 @@ class _MatchingGameScreenState extends State<MatchingGameScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        leading: IconButton(
-          iconSize: 32,
-          tooltip: 'Quay lại',
-          icon: const Icon(Icons.arrow_back_rounded),
-          onPressed: () => Navigator.of(context).maybePop(),
-        ),
-        title: _finished
-            ? null
-            : Text(
-                '${_index + 1}/${_questions.length}',
-                style: const TextStyle(
-                  fontSize: 24,
-                  fontWeight: FontWeight.w800,
-                ),
-              ),
-        actions: [
-          if (!_finished)
-            Padding(
-              padding: const EdgeInsets.only(right: 16),
-              child: Center(
-                child: Text(
-                  '⭐ $_stars',
+    return MascotHost(
+      contextKey: 'match',
+      child: Scaffold(
+        appBar: AppBar(
+          leading: IconButton(
+            iconSize: 32,
+            tooltip: 'Quay lại',
+            icon: const Icon(Icons.arrow_back_rounded),
+            onPressed: () => Navigator.of(context).maybePop(),
+          ),
+          title: _finished
+              ? null
+              : Text(
+                  '${_index + 1}/${_questions.length}',
                   style: const TextStyle(
-                    fontSize: 22,
-                    fontWeight: FontWeight.w700,
+                    fontSize: 24,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+          actions: [
+            if (!_finished)
+              Padding(
+                padding: const EdgeInsets.only(right: 16),
+                child: Center(
+                  child: Text(
+                    '⭐ $_stars',
+                    style: const TextStyle(
+                      fontSize: 22,
+                      fontWeight: FontWeight.w700,
+                    ),
                   ),
                 ),
               ),
-            ),
-        ],
+          ],
+        ),
+        body: SafeArea(
+          child: _finished
+              ? Stack(
+                  children: [
+                    _buildSummary(),
+                    const Positioned.fill(child: ConfettiBurst()),
+                  ],
+                )
+              : _buildQuestion(),
+        ),
       ),
-      body: SafeArea(child: _finished ? _buildSummary() : _buildQuestion()),
     );
   }
 
@@ -217,13 +235,14 @@ class _MatchingGameScreenState extends State<MatchingGameScreen> {
               childAspectRatio: 1,
               physics: const NeverScrollableScrollPhysics(),
               children: [
-                for (final w in q.options)
+                for (var i = 0; i < q.options.length; i++)
                   _OptionCard(
-                    word: w,
-                    isCorrect: _correctId == w.id,
-                    isWrong: _wrong.contains(w.id),
-                    revealText: solved && w.id == q.target.id,
-                    onTap: () => _choose(w),
+                    word: q.options[i],
+                    tint: _tints[i % _tints.length],
+                    isCorrect: _correctId == q.options[i].id,
+                    isWrong: _wrong.contains(q.options[i].id),
+                    revealText: solved && q.options[i].id == q.target.id,
+                    onTap: () => _choose(q.options[i]),
                   ),
               ],
             ),
@@ -289,9 +308,18 @@ class _MatchingGameScreenState extends State<MatchingGameScreen> {
   }
 }
 
-class _OptionCard extends StatelessWidget {
+/// Bốn màu pastel xoay vòng cho bốn đáp án.
+const _tints = [
+  Color(0xFFFFE3CC),
+  Color(0xFFD7F0E8),
+  Color(0xFFE5DEFA),
+  Color(0xFFFFF0B8),
+];
+
+class _OptionCard extends StatefulWidget {
   const _OptionCard({
     required this.word,
+    required this.tint,
     required this.isCorrect,
     required this.isWrong,
     required this.revealText,
@@ -299,42 +327,86 @@ class _OptionCard extends StatelessWidget {
   });
 
   final VocabWord word;
+  final Color tint;
   final bool isCorrect;
   final bool isWrong;
   final bool revealText;
   final VoidCallback onTap;
 
   @override
+  State<_OptionCard> createState() => _OptionCardState();
+}
+
+class _OptionCardState extends State<_OptionCard>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _shake = AnimationController(
+    vsync: this,
+    duration: const Duration(milliseconds: 420),
+  );
+
+  @override
+  void didUpdateWidget(_OptionCard old) {
+    super.didUpdateWidget(old);
+    final reduce =
+        !Mascot.animationsEnabled || MediaQuery.of(context).disableAnimations;
+    // Lắc nhẹ khi vừa chọn sai (không lắc nếu bé bật "giảm chuyển động").
+    if (widget.isWrong && !old.isWrong && !reduce) _shake.forward(from: 0);
+  }
+
+  @override
+  void dispose() {
+    _shake.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
-    final color = isCorrect
-        ? const Color(0xFFBFE8C8)
-        : isWrong
-        ? const Color(0xFFFFE0CC)
-        : Colors.white;
-    return Semantics(
-      button: true,
-      label: isCorrect ? '${word.en}, đúng' : 'Đáp án',
-      child: AnimatedOpacity(
-        duration: const Duration(milliseconds: 200),
-        opacity: isWrong ? 0.5 : 1,
-        child: Material(
-          color: color,
-          borderRadius: BorderRadius.circular(28),
-          child: InkWell(
-            borderRadius: BorderRadius.circular(28),
-            onTap: isWrong ? null : onTap,
+    final word = widget.word;
+    final color = widget.isCorrect
+        ? Palette.good
+        : widget.isWrong
+        ? Palette.oops
+        : widget.tint;
+    return AnimatedBuilder(
+      animation: _shake,
+      builder: (context, child) {
+        final t = _shake.value;
+        final dx = math.sin(t * math.pi * 5) * 12 * (1 - t);
+        return Transform.translate(offset: Offset(dx, 0), child: child);
+      },
+      child: AnimatedScale(
+        scale: widget.isCorrect ? 1.06 : 1,
+        duration: const Duration(milliseconds: 260),
+        curve: Curves.easeOutBack,
+        child: AnimatedOpacity(
+          duration: const Duration(milliseconds: 200),
+          opacity: widget.isWrong ? 0.5 : 1,
+          child: BouncyTap(
+            semanticLabel: widget.isCorrect ? '${word.en}, đúng' : 'Đáp án',
+            color: color,
+            borderRadius: 30,
+            shadowColor: widget.isCorrect ? Palette.leaf : null,
+            onTap: widget.isWrong ? null : widget.onTap,
             child: Center(
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  WordVisual(word: word, size: 96),
-                  if (revealText) ...[
+                  Container(
+                    width: 112,
+                    height: 112,
+                    decoration: const BoxDecoration(
+                      color: Colors.white,
+                      shape: BoxShape.circle,
+                    ),
+                    child: WordVisual(word: word, size: 96),
+                  ),
+                  if (widget.revealText) ...[
                     const SizedBox(height: 6),
                     Text(
                       word.en,
                       style: const TextStyle(
                         fontSize: 26,
-                        fontWeight: FontWeight.w800,
+                        fontWeight: FontWeight.w900,
                       ),
                     ),
                   ],

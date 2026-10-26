@@ -3,6 +3,8 @@ import 'dart:io';
 import 'package:camera/camera.dart';
 import 'package:flutter/material.dart';
 
+import '../mascot/mascot_host.dart';
+
 import '../mascot/mascot.dart';
 
 enum _CamState {
@@ -163,19 +165,24 @@ class _CameraScreenState extends State<CameraScreen>
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.black,
-      appBar: AppBar(
+    return MascotHost(
+      contextKey: 'camera',
+      alignment: Alignment.topRight,
+      margin: const EdgeInsets.fromLTRB(12, 64, 12, 12),
+      child: Scaffold(
         backgroundColor: Colors.black,
-        foregroundColor: Colors.white,
-        leading: IconButton(
-          iconSize: 32,
-          tooltip: 'Quay lại',
-          icon: const Icon(Icons.arrow_back_rounded),
-          onPressed: () => Navigator.of(context).maybePop(),
+        appBar: AppBar(
+          backgroundColor: Colors.black,
+          foregroundColor: Colors.white,
+          leading: IconButton(
+            iconSize: 32,
+            tooltip: 'Quay lại',
+            icon: const Icon(Icons.arrow_back_rounded),
+            onPressed: () => Navigator.of(context).maybePop(),
+          ),
         ),
+        body: SafeArea(child: _buildBody()),
       ),
-      body: SafeArea(child: _buildBody()),
     );
   }
 

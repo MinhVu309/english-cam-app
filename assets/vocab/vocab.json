@@ -4,31 +4,36 @@
       "id": "school",
       "vi": "Đồ dùng học tập",
       "en": "School",
-      "emoji": "🎒"
+      "emoji": "🎒",
+      "color": "#FFE0B2"
     },
     {
       "id": "home",
       "vi": "Trong nhà",
       "en": "Home",
-      "emoji": "🏠"
+      "emoji": "🏠",
+      "color": "#CDEBE4"
     },
     {
       "id": "clothes",
       "vi": "Đồ mặc & mang",
       "en": "Wear",
-      "emoji": "👟"
+      "emoji": "👟",
+      "color": "#E1D9FA"
     },
     {
       "id": "fruit",
       "vi": "Trái cây",
       "en": "Fruit",
-      "emoji": "🍎"
+      "emoji": "🍎",
+      "color": "#FFD6D6"
     },
     {
       "id": "toys",
       "vi": "Đồ chơi",
       "en": "Toys",
-      "emoji": "🧸"
+      "emoji": "🧸",
+      "color": "#FFF1B8"
     }
   ],
   "words": [

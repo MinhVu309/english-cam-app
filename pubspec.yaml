@@ -72,6 +72,7 @@ flutter:
     - assets/ml/
     - assets/vocab/
     - assets/game/
+    - assets/mascot/
     - assets/fonts/OFL.txt
     - assets/images/
     - assets/audio/words/

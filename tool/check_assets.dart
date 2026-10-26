@@ -127,6 +127,46 @@ void main(List<String> args) {
     }
   }
 
+  // Lời nhắn của Cam: đủ context cho các màn hình, điều kiện hợp lệ.
+  final messagesFile = File('assets/mascot/messages.json');
+  if (!messagesFile.existsSync()) {
+    errors.add('Thiếu assets/mascot/messages.json');
+  } else {
+    const screens = [
+      'home',
+      'camera',
+      'result',
+      'vocab',
+      'vocab_detail',
+      'hub',
+      'match',
+      'hunt',
+    ];
+    const conditions = {'any', 'no_learned', 'has_learned', 'has_stars'};
+    final messages =
+        jsonDecode(messagesFile.readAsStringSync()) as Map<String, dynamic>;
+    for (final screen in screens) {
+      final lines = (messages[screen] as List<dynamic>?) ?? const [];
+      if (lines.length < 3) {
+        errors.add(
+          '[lời nhắn $screen] cần ít nhất 3 câu (đang có ${lines.length})',
+        );
+      }
+      for (final l in lines.cast<Map<String, dynamic>>()) {
+        final when = l['when'] as String? ?? 'any';
+        if (!conditions.contains(when)) {
+          errors.add('[lời nhắn $screen] điều kiện "$when" không hợp lệ');
+        }
+        final text = l['text'] as String? ?? '';
+        if (text.isEmpty || text.length > 60) {
+          errors.add(
+            '[lời nhắn $screen] câu rỗng hoặc dài quá 60 ký tự: "$text"',
+          );
+        }
+      }
+    }
+  }
+
   // Hiệu ứng và nhạc nền dùng chung (AudioService).
   const sharedAudio = [
     'assets/audio/sfx/tap.mp3',

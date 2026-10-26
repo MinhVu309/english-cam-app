@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../core/palette.dart';
 import '../../core/router.dart';
+import '../../services/app_settings.dart';
 import '../../services/audio_service.dart';
 import '../../services/game_progress.dart';
 import '../../services/progress_service.dart';
@@ -71,6 +72,25 @@ class SettingsScreen extends StatelessWidget {
                   secondary: const Icon(Icons.music_note_rounded, size: 32),
                   value: on,
                   onChanged: AudioService.instance.setMusicOn,
+                ),
+              ),
+            ),
+            ListenableBuilder(
+              listenable: AppSettings.instance,
+              builder: (context, _) => _Tile(
+                child: SwitchListTile(
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 16),
+                  title: const Text(
+                    'Cam nhắn tin cho bé',
+                    style: TextStyle(fontSize: 22, fontWeight: FontWeight.w700),
+                  ),
+                  subtitle: const Text('Lâu lâu Cam hiện ra nói một câu'),
+                  secondary: const Icon(
+                    Icons.chat_bubble_outline_rounded,
+                    size: 32,
+                  ),
+                  value: AppSettings.instance.mascotChatter,
+                  onChanged: AppSettings.instance.setMascotChatter,
                 ),
               ),
             ),

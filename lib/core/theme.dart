@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import 'palette.dart';
+import 'widgets/page_transition.dart';
 
 /// Tên font tròn (Nunito, giấy phép OFL) đóng gói trong assets/fonts.
 const String kFontFamily = 'Nunito';
@@ -25,7 +26,14 @@ ThemeData buildAppTheme() {
     fontWeight: FontWeight.w800,
   );
   return base.copyWith(
-    scaffoldBackgroundColor: Palette.cream,
+    // Nền do FunBackground (MaterialApp.builder) vẽ phía sau mọi màn hình.
+    scaffoldBackgroundColor: Colors.transparent,
+    pageTransitionsTheme: const PageTransitionsTheme(
+      builders: {
+        TargetPlatform.android: PopPageTransitionsBuilder(),
+        TargetPlatform.iOS: PopPageTransitionsBuilder(),
+      },
+    ),
     textTheme: base.textTheme
         .copyWith(
           // Mọi chữ thân bài >= 18sp cho bé dễ đọc.

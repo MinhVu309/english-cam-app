@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../core/palette.dart';
 import '../../core/theme.dart';
+import '../../core/widgets/fun_background.dart';
 import '../mascot/mascot.dart';
 
 /// Hiện khi app không nạp được dữ liệu lúc khởi động (thay vì màn hình trắng).
@@ -16,6 +17,7 @@ class StartupErrorApp extends StatelessWidget {
       title: 'English Cam',
       debugShowCheckedModeBanner: false,
       theme: buildAppTheme(),
+      builder: (context, child) => FunBackground(child: child!),
       home: Scaffold(
         body: SafeArea(
           child: Center(

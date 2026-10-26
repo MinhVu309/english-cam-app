@@ -1,9 +1,12 @@
+import 'dart:ui' show Color;
+
 class VocabCategory {
   const VocabCategory({
     required this.id,
     required this.vi,
     required this.en,
     this.emoji,
+    this.color,
   });
 
   factory VocabCategory.fromJson(Map<String, dynamic> j) => VocabCategory(
@@ -11,12 +14,23 @@ class VocabCategory {
     vi: j['vi'] as String,
     en: j['en'] as String,
     emoji: j['emoji'] as String?,
+    color: _parseColor(j['color'] as String?),
   );
 
   final String id;
   final String vi;
   final String en;
   final String? emoji;
+
+  /// Màu pastel của chủ đề (từ vocab.json), dùng tô thẻ từ.
+  final Color? color;
+}
+
+/// `#RRGGBB` -> Color; null nếu thiếu hoặc sai định dạng.
+Color? _parseColor(String? hex) {
+  if (hex == null) return null;
+  final v = int.tryParse(hex.replaceFirst('#', ''), radix: 16);
+  return v == null ? null : Color(0xFF000000 | v);
 }
 
 class VocabWord {

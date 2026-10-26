@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 
 import '../../core/router.dart';
+import '../../core/widgets/bouncy_tap.dart';
 import '../../data/vocab_repository.dart';
 import '../../data/vocab_word.dart';
 import '../../services/progress_service.dart';
 import '../mascot/mascot.dart';
+import '../mascot/mascot_host.dart';
 import 'word_visual.dart';
 
 class VocabListScreen extends StatefulWidget {
@@ -70,63 +72,74 @@ class _VocabListScreenState extends State<VocabListScreen> {
           ),
         ],
       ),
-      body: SafeArea(
-        child: Column(
-          children: [
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
-              child: TextField(
-                controller: _search,
-                style: const TextStyle(fontSize: 20),
-                decoration: InputDecoration(
-                  hintText: 'Tìm từ…',
-                  prefixIcon: const Icon(Icons.search_rounded),
-                  suffixIcon: _query.isEmpty
-                      ? null
-                      : IconButton(
-                          tooltip: 'Xoá',
-                          icon: const Icon(Icons.close_rounded),
-                          onPressed: () {
-                            _search.clear();
-                            setState(() => _query = '');
-                          },
-                        ),
-                  filled: true,
-                  fillColor: Colors.white,
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(28),
-                    borderSide: BorderSide.none,
+      body: MascotHost(
+        contextKey: 'vocab',
+        child: SafeArea(
+          child: Column(
+            children: [
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+                child: TextField(
+                  controller: _search,
+                  style: const TextStyle(fontSize: 20),
+                  decoration: InputDecoration(
+                    hintText: 'Tìm từ…',
+                    prefixIcon: const Icon(Icons.search_rounded),
+                    suffixIcon: _query.isEmpty
+                        ? null
+                        : IconButton(
+                            tooltip: 'Xoá',
+                            icon: const Icon(Icons.close_rounded),
+                            onPressed: () {
+                              _search.clear();
+                              setState(() => _query = '');
+                            },
+                          ),
+                    filled: true,
+                    fillColor: Colors.white,
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(28),
+                      borderSide: BorderSide.none,
+                    ),
                   ),
+                  onChanged: (v) => setState(() => _query = v),
                 ),
-                onChanged: (v) => setState(() => _query = v),
               ),
-            ),
-            SizedBox(
-              height: 56,
-              child: ListView(
-                scrollDirection: Axis.horizontal,
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                children: [
-                  _chip('Tất cả', null),
-                  for (final c in _repo.categories)
-                    _chip('${c.emoji ?? ''} ${c.vi}'.trim(), c.id),
-                ],
+              SizedBox(
+                height: 56,
+                child: ListView(
+                  scrollDirection: Axis.horizontal,
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  children: [
+                    _chip('Tất cả', null),
+                    for (final c in _repo.categories)
+                      _chip(
+                        '${c.emoji ?? ''} ${c.vi}'.trim(),
+                        c.id,
+                        tint: c.color,
+                      ),
+                  ],
+                ),
               ),
-            ),
-            Expanded(child: _buildGrid()),
-          ],
+              Expanded(child: _buildGrid()),
+            ],
+          ),
         ),
       ),
     );
   }
 
-  Widget _chip(String label, String? id) {
+  Widget _chip(String label, String? id, {Color? tint}) {
     return Padding(
       padding: const EdgeInsets.only(right: 8),
       child: ChoiceChip(
         label: Text(label, style: const TextStyle(fontSize: 18)),
         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 12),
         selected: _category == id,
+        backgroundColor: tint,
+        selectedColor: tint == null
+            ? null
+            : Color.alphaBlend(Colors.black12, tint),
         onSelected: (_) => setState(() => _category = id),
       ),
     );
@@ -181,45 +194,48 @@ class _WordCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Semantics(
-      button: true,
-      label: '${word.en}, ${word.vi}${learned ? ', đã học' : ''}',
-      child: Material(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(24),
-        child: InkWell(
-          borderRadius: BorderRadius.circular(24),
-          onTap: () => Navigator.of(
-            context,
-          ).pushNamed(Routes.vocabDetail, arguments: word),
-          child: Stack(
-            children: [
-              Center(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    WordVisual(word: word, size: 80),
-                    const SizedBox(height: 8),
-                    Text(
-                      word.en,
-                      style: const TextStyle(
-                        fontSize: 24,
-                        fontWeight: FontWeight.w800,
-                      ),
-                    ),
-                    Text(word.vi, style: const TextStyle(fontSize: 18)),
-                  ],
+    final tint =
+        VocabRepository.instance.category(word.category)?.color ?? Colors.white;
+    return BouncyTap(
+      semanticLabel: '${word.en}, ${word.vi}${learned ? ', đã học' : ''}',
+      color: Color.alphaBlend(Colors.white.withValues(alpha: 0.55), tint),
+      borderRadius: 26,
+      onTap: () =>
+          Navigator.of(context).pushNamed(Routes.vocabDetail, arguments: word),
+      child: Stack(
+        children: [
+          Center(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  width: 96,
+                  height: 96,
+                  decoration: const BoxDecoration(
+                    color: Colors.white,
+                    shape: BoxShape.circle,
+                  ),
+                  child: WordVisual(word: word, size: 80),
                 ),
-              ),
-              if (learned)
-                const Positioned(
-                  top: 8,
-                  right: 12,
-                  child: Text('⭐', style: TextStyle(fontSize: 24)),
+                const SizedBox(height: 8),
+                Text(
+                  word.en,
+                  style: const TextStyle(
+                    fontSize: 24,
+                    fontWeight: FontWeight.w900,
+                  ),
                 ),
-            ],
+                Text(word.vi, style: const TextStyle(fontSize: 18)),
+              ],
+            ),
           ),
-        ),
+          if (learned)
+            const Positioned(
+              top: 8,
+              right: 12,
+              child: Text('⭐', style: TextStyle(fontSize: 26)),
+            ),
+        ],
       ),
     );
   }

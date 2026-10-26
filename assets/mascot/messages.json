@@ -1,0 +1,134 @@
+{
+  "home": [
+    {
+      "text": "Chào bé! Hôm nay mình học gì nhỉ?",
+      "mood": "happy"
+    },
+    {
+      "text": "Mình chụp một đồ vật đầu tiên nhé!",
+      "when": "no_learned",
+      "mood": "cheer"
+    },
+    {
+      "text": "Bé đã học {learned} từ rồi, giỏi quá!",
+      "when": "has_learned",
+      "mood": "cheer"
+    },
+    {
+      "text": "Bé đang có {stars} sao lấp lánh đó!",
+      "when": "has_stars",
+      "mood": "cheer"
+    },
+    {
+      "text": "Bấm 'Chơi' để gom thêm sao nhé!",
+      "mood": "happy"
+    },
+    {
+      "text": "Cam thích nhất là được học cùng bé!",
+      "mood": "happy"
+    },
+    {
+      "text": "Học một lúc nhớ nghỉ mắt nhé!",
+      "mood": "thinking"
+    }
+  ],
+  "camera": [
+    {
+      "text": "Đặt vật ở giữa và giữ máy thật chắc nhé!"
+    },
+    {
+      "text": "Chụp gần một chút để Cam thấy rõ hơn nè!",
+      "mood": "thinking"
+    },
+    {
+      "text": "Chỗ đủ sáng thì Cam nhìn rõ hơn đó!"
+    },
+    {
+      "text": "Mỗi lần chụp một đồ vật thôi nhé!"
+    }
+  ],
+  "result": [
+    {
+      "text": "Bấm cái loa để nghe lại nhé!"
+    },
+    {
+      "text": "Cam đoán sai thì bấm 'Không đúng?' nha."
+    },
+    {
+      "text": "Bé đọc theo Cam thử xem nào!",
+      "mood": "cheer"
+    },
+    {
+      "text": "Chạm vào từ để xem thêm chi tiết nhé!"
+    }
+  ],
+  "vocab": [
+    {
+      "text": "Chọn một chủ đề để tìm từ dễ hơn nhé!"
+    },
+    {
+      "text": "Bấm vào thẻ để xem và nghe từ nha!"
+    },
+    {
+      "text": "Gõ vào ô tìm kiếm cũng được đó!",
+      "mood": "thinking"
+    },
+    {
+      "text": "Bé đã học {learned}/{total} từ rồi đó!",
+      "when": "has_learned",
+      "mood": "cheer"
+    }
+  ],
+  "vocab_detail": [
+    {
+      "text": "Bấm 'Nghe' rồi đọc theo Cam nhé!",
+      "mood": "cheer"
+    },
+    {
+      "text": "Bé thử đặt câu với từ này xem!",
+      "mood": "thinking"
+    },
+    {
+      "text": "Học xong thì bấm 'Mình đã học từ này' nha!"
+    }
+  ],
+  "hub": [
+    {
+      "text": "Chơi game để gom thật nhiều sao nhé!",
+      "mood": "cheer"
+    },
+    {
+      "text": "Bé có {stars} sao rồi, tuyệt vời!",
+      "when": "has_stars",
+      "mood": "cheer"
+    },
+    {
+      "text": "Huy hiệu đang chờ bé mở khoá đó!"
+    }
+  ],
+  "match": [
+    {
+      "text": "Nghe kỹ rồi chọn hình đúng nha!"
+    },
+    {
+      "text": "Bấm loa để nghe lại bao nhiêu lần cũng được!"
+    },
+    {
+      "text": "Sai cũng không sao, thử lại nhé!",
+      "mood": "cheer"
+    }
+  ],
+  "hunt": [
+    {
+      "text": "Đi tìm vật thật rồi chụp cho Cam xem nhé!",
+      "mood": "cheer"
+    },
+    {
+      "text": "Tìm ngay trong nhà thôi, gần lắm!"
+    },
+    {
+      "text": "Nhờ bố mẹ giúp nếu bé khó tìm nha!",
+      "mood": "thinking"
+    }
+  ]
+}
