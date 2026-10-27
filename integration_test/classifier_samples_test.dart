@@ -4,7 +4,10 @@
 import 'dart:io';
 import 'dart:ui' as ui;
 
+import 'dart:typed_data';
+
 import 'package:english_cam/ml/classifier_service.dart';
+import 'package:tflite_flutter/tflite_flutter.dart';
 import 'package:english_cam/ml/image_preprocess.dart';
 import 'package:english_cam/ml/object_localizer.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -168,5 +171,59 @@ void main() {
     await tester.runAsync(
       () => Future<void>.delayed(const Duration(seconds: 60)),
     );
+  });
+
+  testWidgets('đo từng bước của một ô', (tester) async {
+    final files = await _samples();
+    final svc = ClassifierService.instance;
+    await svc.init();
+    final img = await decodeImageFile(files.first.path);
+    final wins = ObjectLocalizer.generateWindows(img.width, img.height);
+    // khởi động nóng
+    await svc.probabilities(await imageRegionToFloat32(img, src: wins.first));
+
+    final pre = Stopwatch(), inf = Stopwatch();
+    for (final w in wins) {
+      pre.start();
+      final input = await imageRegionToFloat32(img, src: w);
+      pre.stop();
+      inf.start();
+      await svc.probabilities(input);
+      inf.stop();
+    }
+    final n = wins.length;
+    // ignore: avoid_print
+    print(
+      'STEP windows=$n image=${img.width}x${img.height} '
+      'preprocess/window=${(pre.elapsedMicroseconds / n / 1000).toStringAsFixed(1)}ms '
+      'inference/window=${(inf.elapsedMicroseconds / n / 1000).toStringAsFixed(1)}ms',
+    );
+  });
+
+  testWidgets('đo suy luận thuần theo số luồng', (tester) async {
+    final files = await _samples();
+    final img = await decodeImageFile(files.first.path);
+    final input = await imageRegionToFloat32(img);
+    final lines = <String>[];
+    for (final threads in [1, 2, 4]) {
+      final it = await Interpreter.fromAsset(
+        'assets/ml/model.tflite',
+        options: InterpreterOptions()..threads = threads,
+      );
+      final out = Float32List(24);
+      for (var i = 0; i < 3; i++) {
+        it.run(input.buffer, out.buffer);
+      }
+      final sw = Stopwatch()..start();
+      for (var i = 0; i < 20; i++) {
+        it.run(input.buffer, out.buffer);
+      }
+      lines.add(
+        'threads=$threads ${(sw.elapsedMicroseconds / 20 / 1000).toStringAsFixed(1)}ms',
+      );
+      it.close();
+    }
+    // ignore: avoid_print
+    print('RAW ${lines.join(' | ')}');
   });
 }

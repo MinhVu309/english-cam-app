@@ -26,13 +26,15 @@ class ObjectLocalizer {
   final ClassifierService _classifier;
 
   /// Cạnh ô vuông = tỉ lệ × cạnh ngắn của ảnh.
-  static const List<double> scales = [1.0, 0.7, 0.5, 0.35];
+  /// Ba cỡ (~24 ô/ảnh): bộ 4 cỡ cho khung gần giống nhưng chậm gấp đôi trên máy yếu
+  /// (suy luận ~45–65 ms/ô trên Snapdragon 685).
+  static const List<double> scales = [1.0, 0.7, 0.5];
 
   /// Bước trượt = tỉ lệ × cạnh ô.
   static const double stride = 0.5;
 
   /// Số ô tối đa mỗi ảnh (ảnh rất dài sẽ tăng bước trượt để không quá chậm).
-  static const int maxWindows = 80;
+  static const int maxWindows = 40;
 
   /// Xác suất cao nhất phải đạt ngưỡng này mới vẽ khung.
   static const double minProbability = 0.5;

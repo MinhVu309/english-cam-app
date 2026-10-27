@@ -12,6 +12,10 @@ const String kLabelsAsset = 'assets/ml/labels.txt';
 /// Chỉ hiện kết quả khi xác suất cao nhất >= ngưỡng này (model không có lớp `none`).
 const double kConfidenceThreshold = 0.7;
 
+/// Số luồng CPU cho TFLite. Đo trên Xiaomi 23021RAAEG: 1 luồng 65 ms, 2 luồng 44 ms,
+/// 4 luồng 49 ms mỗi lần suy luận, nên dùng 2.
+const int kInterpreterThreads = 2;
+
 class Prediction {
   const Prediction(this.label, this.probability);
 
@@ -74,7 +78,10 @@ class ClassifierService {
         .where((l) => l.isNotEmpty)
         .toList();
 
-    final interpreter = await Interpreter.fromAsset(kModelAsset);
+    final interpreter = await Interpreter.fromAsset(
+      kModelAsset,
+      options: InterpreterOptions()..threads = kInterpreterThreads,
+    );
     final inShape = interpreter.getInputTensor(0).shape;
     final outShape = interpreter.getOutputTensor(0).shape;
     final ok =
