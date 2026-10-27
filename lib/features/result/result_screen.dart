@@ -74,6 +74,10 @@ class _ResultScreenState extends State<ResultScreen> {
 
   Future<ClassificationResult> _classify() async {
     final r = await ClassifierService.instance.classifyFile(widget.imagePath);
+    debugPrint(
+      '[perf] classify ${r.inferenceMs}ms best=${r.best.label} '
+      'p=${r.best.probability.toStringAsFixed(2)}',
+    );
     if (!_disposed && r.isConfident) {
       _locate(r.best.label);
       _speak(r.best.label);
@@ -94,6 +98,7 @@ class _ResultScreenState extends State<ResultScreen> {
       _box = null;
       _locating = true;
     });
+    final sw = Stopwatch()..start();
     DetectionBox? box;
     try {
       box = await ObjectLocalizer.instance.localize(
@@ -104,6 +109,9 @@ class _ResultScreenState extends State<ResultScreen> {
     } catch (e) {
       debugPrint('Localize failed: $e');
     }
+    debugPrint(
+      '[perf] locate $label ${sw.elapsedMilliseconds}ms found=${box != null}',
+    );
     if (_disposed || token != _locateToken) return;
     setState(() {
       _box = box;
