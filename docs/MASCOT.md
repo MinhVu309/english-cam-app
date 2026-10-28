@@ -8,7 +8,10 @@
 
 - **Tính cách:** thân thiện, vui vẻ, hay khen, không bao giờ trách bé.
 - **Cách xưng hô:** Cam xưng "Cam" hoặc "mình", gọi người dùng là "bé".
-- **Bản quyền:** Cam do nhóm **tự vẽ bằng code** (`CustomPaint`), không dựa trên nhân vật có bản quyền nào.
+- **Bản quyền:** Cam do nhóm **tự thiết kế**, không dựa trên nhân vật có bản quyền nào.
+- **Hình ảnh hiện tại (3D):** Cam được dựng 3D bằng three.js rồi xuất thành 4 ảnh PNG nền trong suốt trong `assets/mascot/` (`cam_happy.png`, `cam_cheer.png`, `cam_thinking.png`, `cam_oops.png`, ứng với bốn biểu cảm bên dưới). `Mascot` hiển thị ảnh theo biểu cảm, đổi mặt bằng hiệu ứng mờ chuyển, và nhún/co giãn nhẹ để như đang thở. Bản vẽ 2D bằng `CustomPaint` (`MascotPainter`) được giữ làm **phương án dự phòng** khi không nạp được ảnh.
+- **Giới hạn so với bản vẽ 2D cũ:** ảnh 3D là ảnh tĩnh nên không còn chớp mắt, nhép miệng, đung đưa lá và tay riêng từng phần; các mô tả hoạt hình chi tiết bên dưới là của bản 2D dự phòng. Muốn có lại, cần dựng Cam dạng nhiều lớp hoặc dùng hoạt hình 3D/Rive (phải hỏi nhóm trước vì thêm thư viện).
+- **Logo ứng dụng:** icon launcher (kèm adaptive icon và icon đơn sắc cho Android 13+) và màn chờ khi mở app dùng cùng Cam 3D (`android/app/src/main/res/mipmap-*`, `drawable-nodpi/launch_cam.png`).
 
 ## 2. Biểu cảm
 

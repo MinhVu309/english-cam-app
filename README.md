@@ -17,7 +17,7 @@
 - **Chụp & Học:** chụp đồ vật → nhận diện trong ~0,2 giây → tự đọc từ tiếng Anh → vẽ khung vuông quanh vật. Nếu app nhận sai, bé hoặc bố mẹ bấm "Không đúng?" để chọn lại trong top-3.
 - **Từ vựng:** 60 từ đóng gói sẵn, 11 chủ đề (phiên âm, nghĩa tiếng Việt, câu ví dụ có đọc), tìm kiếm, lọc theo chủ đề, đánh dấu đã học.
 - **Game:** *Nghe & chọn hình* (8 câu/ván) và *Tìm vật* (đi tìm vật thật rồi chụp). Có sao và 8 huy hiệu. Trả lời sai chỉ được khuyến khích, không bị trừ sao.
-- **Cam:** linh vật tự vẽ, lâu lâu hiện ra nhắn bé ở mọi màn hình (xem [docs/MASCOT.md](docs/MASCOT.md)).
+- **Cam:** linh vật 3D tự dựng, lâu lâu hiện ra nhắn bé ở mọi màn hình (xem [docs/MASCOT.md](docs/MASCOT.md)).
 - **Dành cho bố mẹ:** Cài đặt nằm sau cổng phụ huynh (phép nhân), có tắt nhạc, tắt lời nhắn của Cam, xoá tiến độ, xem lại hướng dẫn.
 
 ## 24 từ chụp nhận diện được (trong 60 từ có sẵn)
