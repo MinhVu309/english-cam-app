@@ -1,9 +1,11 @@
 import 'dart:async';
-import 'dart:typed_data';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:tflite_flutter/tflite_flutter.dart';
 
+import '../data/pack/pack_manifest.dart';
+import '../data/pack/pack_store.dart';
 import 'image_preprocess.dart';
 
 const String kModelAsset = 'assets/ml/model.tflite';
@@ -50,6 +52,8 @@ List<Prediction> topK(List<double> probs, List<String> labels, {int k = 3}) {
   return [for (final i in idx.take(k)) Prediction(labels[i], probs[i])];
 }
 
+enum ModelSource { bundled, pack }
+
 /// Singleton: nạp model một lần, suy luận chạy trong isolate riêng.
 class ClassifierService {
   ClassifierService._();
@@ -70,37 +74,78 @@ class ClassifierService {
     throw e;
   });
 
-  Future<void> _load() async {
-    final raw = await rootBundle.loadString(kLabelsAsset);
-    final labels = raw
-        .split('\n')
-        .map((l) => l.trim())
-        .where((l) => l.isNotEmpty)
-        .toList();
+  /// Model đang dùng: đóng gói sẵn hay từ gói từ vựng đã tải.
+  ModelSource _source = ModelSource.bundled;
+  ModelSource get source => _source;
 
+  /// Ưu tiên model của gói đã tải; không đúng hợp đồng hoặc không nạp được thì
+  /// dùng model đóng gói sẵn, nên gói hỏng không làm app mất khả năng nhận diện.
+  Future<void> _load() async {
+    final store = PackStore.instance;
+    final modelFile = store?.fileFor(kPackModelFile);
+    final labelsFile = store?.fileFor(kPackLabelsFile);
+    if (modelFile != null && labelsFile != null) {
+      try {
+        await _adopt(
+          _parseLabels(await labelsFile.readAsString()),
+          Interpreter.fromFile(modelFile, options: _options()),
+        );
+        _source = ModelSource.pack;
+        return;
+      } catch (e) {
+        debugPrint('Pack model rejected, using bundled: $e');
+      }
+    }
+    final labels = _parseLabels(await rootBundle.loadString(kLabelsAsset));
     final interpreter = await Interpreter.fromAsset(
       kModelAsset,
-      options: InterpreterOptions()..threads = kInterpreterThreads,
+      options: _options(),
     );
-    final inShape = interpreter.getInputTensor(0).shape;
-    final outShape = interpreter.getOutputTensor(0).shape;
+    await _adopt(labels, interpreter);
+    _source = ModelSource.bundled;
+  }
+
+  static InterpreterOptions _options() =>
+      InterpreterOptions()..threads = kInterpreterThreads;
+
+  static List<String> _parseLabels(String raw) =>
+      raw.split('\n').map((l) => l.trim()).where((l) => l.isNotEmpty).toList();
+
+  /// Kiểm tra hợp đồng model (input 1×224×224×3 float32, output 1×N float32 với
+  /// N = số nhãn) rồi mới nhận; sai thì đóng interpreter và ném lỗi.
+  Future<void> _adopt(List<String> labels, Interpreter interpreter) async {
+    final inTensor = interpreter.getInputTensor(0);
+    final outTensor = interpreter.getOutputTensor(0);
+    final inShape = inTensor.shape;
+    final outShape = outTensor.shape;
     final ok =
         inShape.length == 4 &&
+        inShape[0] == 1 &&
         inShape[1] == kModelInputSize &&
         inShape[2] == kModelInputSize &&
         inShape[3] == 3 &&
+        inTensor.type == TensorType.float32 &&
         outShape.length == 2 &&
-        outShape[1] == labels.length;
+        outShape[0] == 1 &&
+        outShape[1] == labels.length &&
+        outTensor.type == TensorType.float32;
     if (!ok) {
       interpreter.close();
       throw StateError(
-        'Model không khớp hợp đồng: input $inShape, output $outShape, '
-        '${labels.length} nhãn',
+        'Model không khớp hợp đồng: input $inShape ${inTensor.type}, '
+        'output $outShape ${outTensor.type}, ${labels.length} nhãn',
       );
     }
     _labels = labels;
     _interpreter = interpreter;
     _isolate = await IsolateInterpreter.create(address: interpreter.address);
+  }
+
+  /// Nạp lại sau khi gói từ vựng được cập nhật hoặc xoá.
+  Future<void> reload() async {
+    await dispose();
+    _labels = const [];
+    await init();
   }
 
   Future<ClassificationResult> classifyFile(String path) async {
@@ -123,7 +168,7 @@ class ClassifierService {
     );
   }
 
-  /// Xác suất của cả 24 lớp (chỉ số i ↔ dòng i của labels.txt).
+  /// Xác suất của mọi lớp (chỉ số i ↔ dòng i của labels.txt).
   Future<Float32List> probabilities(Float32List input) async {
     await init();
     final output = Float32List(_labels.length);

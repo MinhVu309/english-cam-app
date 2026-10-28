@@ -1,5 +1,8 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 
+import '../../data/pack/pack_store.dart';
 import '../../data/vocab_word.dart';
 
 /// Hình minh hoạ của một từ: ảnh asset > emoji > chữ cái đầu.
@@ -23,13 +26,27 @@ class WordVisual extends StatelessWidget {
     );
     final Widget child;
     if (image != null) {
-      child = Image.asset(
-        image,
-        width: size,
-        height: size,
-        fit: BoxFit.contain,
-        errorBuilder: (context, error, stack) => letter(),
-      );
+      Widget errorBuilder(BuildContext c, Object e, StackTrace? s) => letter();
+      final packed = PackStore.isBundled(image)
+          ? null
+          : PackStore.instance?.fileFor(image);
+      child = PackStore.isBundled(image)
+          ? Image.asset(
+              image,
+              width: size,
+              height: size,
+              fit: BoxFit.contain,
+              errorBuilder: errorBuilder,
+            )
+          : packed == null
+          ? letter()
+          : Image.file(
+              File(packed.path),
+              width: size,
+              height: size,
+              fit: BoxFit.contain,
+              errorBuilder: errorBuilder,
+            );
     } else if (emoji != null) {
       child = Text(emoji, style: TextStyle(fontSize: size * 0.7, height: 1));
     } else {

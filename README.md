@@ -1,6 +1,6 @@
 # English Cam
 
-Ứng dụng Android giúp trẻ em học từ vựng tiếng Anh bằng camera: bé chụp một đồ vật, app nhận ra đó là gì, đọc tên bằng tiếng Anh, rồi bé học tiếp qua thẻ từ và game. Chạy **hoàn toàn offline**, không quảng cáo, không thu thập dữ liệu.
+Ứng dụng Android giúp trẻ em học từ vựng tiếng Anh bằng camera: bé chụp một đồ vật, app nhận ra đó là gì, đọc tên bằng tiếng Anh, rồi bé học tiếp qua thẻ từ và game. Dùng được **hoàn toàn offline**, không quảng cáo, không thu thập dữ liệu. Từ vựng (và mô hình) có thể cập nhật từ hosting mà không cần build lại app (xem [docs/VOCAB_PACK.md](docs/VOCAB_PACK.md)).
 
 | Chào bé | Màn hình chính | Từ vựng | Chi tiết từ |
 |---|---|---|---|
@@ -15,12 +15,12 @@
 ## Tính năng
 
 - **Chụp & Học:** chụp đồ vật → nhận diện trong ~0,2 giây → tự đọc từ tiếng Anh → vẽ khung vuông quanh vật. Nếu app nhận sai, bé hoặc bố mẹ bấm "Không đúng?" để chọn lại trong top-3.
-- **Từ vựng:** 24 từ (phiên âm, nghĩa tiếng Việt, câu ví dụ có đọc), tìm kiếm, lọc theo chủ đề, đánh dấu đã học.
+- **Từ vựng:** 60 từ đóng gói sẵn, 11 chủ đề (phiên âm, nghĩa tiếng Việt, câu ví dụ có đọc), tìm kiếm, lọc theo chủ đề, đánh dấu đã học.
 - **Game:** *Nghe & chọn hình* (8 câu/ván) và *Tìm vật* (đi tìm vật thật rồi chụp). Có sao và 8 huy hiệu. Trả lời sai chỉ được khuyến khích, không bị trừ sao.
 - **Cam:** linh vật tự vẽ, lâu lâu hiện ra nhắn bé ở mọi màn hình (xem [docs/MASCOT.md](docs/MASCOT.md)).
 - **Dành cho bố mẹ:** Cài đặt nằm sau cổng phụ huynh (phép nhân), có tắt nhạc, tắt lời nhắn của Cam, xoá tiến độ, xem lại hướng dẫn.
 
-## 24 từ nhận diện được
+## 24 từ chụp nhận diện được (trong 60 từ có sẵn)
 
 `book, pen, bag, ruler, scissors, clock, cup, bottle, chair, table, bowl, spoon, shoe, hat, glasses, umbrella, toothbrush, towel, apple, banana, orange, ball, teddy_bear, toy_car`
 
@@ -40,8 +40,9 @@ flutter build apk --release       # APK release: build/app/outputs/flutter-apk/a
 
 ```bash
 flutter analyze                          # phân tích tĩnh
-flutter test                             # 46 test đơn vị + widget
+flutter test                             # 70 test đơn vị + widget
 dart run tool/check_assets.dart          # nhãn model ↔ vocab ↔ ảnh ↔ âm thanh ↔ lời nhắn
+dart run tool/build_pack.dart build <thư-mục> --version N   # tạo manifest cho gói từ vựng (docs/VOCAB_PACK.md)
 flutter test integration_test -d <máy>   # đo độ chính xác và thời gian trên thiết bị thật
 ```
 
@@ -51,6 +52,7 @@ Kết quả đo trên thiết bị thật và hạn chế đã biết: xem [docs
 
 - MobileNetV2 (fine-tune từ ImageNet), phân loại ảnh 24 lớp, file `assets/ml/model.tflite` (2,5 MB) và `labels.txt`.
 - Input `[1,224,224,3]` float32, pixel giữ nguyên 0–255 (model tự `Rescaling` bên trong); output `[1,24]` softmax.
+- Từ vựng và mô hình tách rời: từ có `label` mới nhận diện được, từ không có `label` chỉ để học. Nâng cấp mô hình chỉ cần thay file trong gói từ vựng.
 - Ngưỡng hiển thị kết quả: xác suất ≥ 0,7; thấp hơn thì Cam nói "Mình chưa chắc, thử chụp lại nhé!".
 - Chạy bằng `tflite_flutter` trong isolate riêng, 2 luồng CPU.
 - **Khung quanh vật:** model chỉ phân loại cả ảnh, không có bounding box. App ước lượng vị trí bằng cách cho model xem khoảng 24 ô vuông ở 3 cỡ, gộp xác suất thành bản đồ nhiệt rồi vẽ khung vuông quanh vùng nóng ([object_localizer.dart](lib/ml/object_localizer.dart)). Đây là ước lượng, khung có thể lệch hoặc rộng hơn vật.
@@ -61,7 +63,7 @@ Kết quả đo trên thiết bị thật và hạn chế đã biết: xem [docs
 lib/
   main.dart                  # khởi động, nạp dữ liệu, màn hình lỗi khởi động
   core/                      # theme, bảng màu, router, widget dùng chung
-  data/                      # VocabRepository, huy hiệu
+  data/                      # VocabRepository, huy hiệu; pack/: tải & lưu gói từ vựng (manifest, sha256, PackUpdater)
   ml/                        # ClassifierService, tiền xử lý ảnh, ObjectLocalizer
   services/                  # âm thanh, tiến độ học, sao & huy hiệu, cài đặt
   features/                  # home, camera, result, vocab, game, mascot, onboarding, settings
@@ -76,7 +78,7 @@ Toàn bộ từ vựng nằm trong `assets/vocab/vocab.json`, huy hiệu trong `
 
 ## Quyền riêng tư
 
-Không cần mạng. Ảnh bé chụp chỉ được xử lý trên máy và không lưu lại hay gửi đi. Tiến độ học (từ đã học, sao, huy hiệu) lưu cục bộ bằng `shared_preferences`. Quyền duy nhất: **Camera**.
+Dùng bình thường không cần mạng. Ảnh bé chụp chỉ được xử lý trên máy và không lưu lại hay gửi đi. Tiến độ học (từ đã học, sao, huy hiệu) lưu cục bộ bằng `shared_preferences`. Quyền: **Camera**, và **Internet** chỉ để tải gói từ vựng khi bố mẹ bấm *Cập nhật từ vựng* trong Cài đặt (chỉ tải về, không gửi dữ liệu đi).
 
 ## Nguồn và giấy phép
 

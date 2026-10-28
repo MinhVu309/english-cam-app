@@ -45,8 +45,15 @@ class _HuntGameScreenState extends State<HuntGameScreen> {
   }
 
   void _pickTarget() {
+    // Model từ gói đã tải có thể khác bộ nhãn: chỉ chọn từ model còn nhận ra.
+    final labels = ClassifierService.instance.labels.toSet();
+    final all = VocabRepository.instance.words;
+    final recognized = [
+      for (final w in all)
+        if (labels.isEmpty || labels.contains(w.label)) w,
+    ];
     _targetOrNull = pickHuntTarget(
-      VocabRepository.instance.words,
+      recognized.any((w) => w.hunt) ? recognized : all,
       _rng,
       previous: _targetOrNull?.id,
     );
@@ -67,7 +74,7 @@ class _HuntGameScreenState extends State<HuntGameScreen> {
     try {
       final r = await ClassifierService.instance.classifyFile(path);
       if (!mounted) return;
-      if (isHuntSuccess(r, _target.label)) {
+      if (isHuntSuccess(r, _target.label!)) {
         await _succeed(2);
       } else {
         AudioService.instance.playSfx(Sfx.wrong);
