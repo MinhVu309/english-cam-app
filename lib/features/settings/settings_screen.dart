@@ -97,6 +97,18 @@ class SettingsScreen extends StatelessWidget {
             _Tile(
               child: ListTile(
                 contentPadding: const EdgeInsets.symmetric(horizontal: 16),
+                leading: const Icon(Icons.cloud_download_outlined, size: 32),
+                title: const Text(
+                  'Cập nhật từ vựng',
+                  style: TextStyle(fontSize: 22, fontWeight: FontWeight.w700),
+                ),
+                subtitle: const Text('Tải thêm từ mới khi có mạng'),
+                onTap: () => Navigator.of(context).pushNamed(Routes.packUpdate),
+              ),
+            ),
+            _Tile(
+              child: ListTile(
+                contentPadding: const EdgeInsets.symmetric(horizontal: 16),
                 leading: const Icon(Icons.slideshow_rounded, size: 32),
                 title: const Text(
                   'Xem lại hướng dẫn',
@@ -192,10 +204,11 @@ class _AboutCard extends StatelessWidget {
           ),
           SizedBox(height: 12),
           Text(
-            '• Chạy hoàn toàn trên máy, không cần mạng.\n'
+            '• Chạy trên máy, dùng được khi không có mạng. Chỉ khi bố mẹ bấm '
+            '"Cập nhật từ vựng" app mới kết nối mạng để tải từ mới.\n'
             '• Không quảng cáo, không thu thập hay gửi dữ liệu đi đâu. '
             'Ảnh bé chụp chỉ được nhận diện trên máy.\n'
-            '• Nhận diện 24 đồ vật bằng mô hình MobileNetV2; có thể nhận nhầm, '
+            '• Nhận diện đồ vật bằng mô hình MobileNetV2; có thể nhận nhầm, '
             'bé luôn có thể chọn lại.',
             style: TextStyle(fontSize: 18, height: 1.4, color: Palette.inkSoft),
           ),

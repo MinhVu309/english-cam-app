@@ -41,7 +41,7 @@ class HomeScreen extends StatelessWidget {
       _HomeCard(
         icon: Icons.menu_book_rounded,
         label: 'Từ vựng',
-        subtitle: '24 từ để xem và nghe',
+        subtitle: '${VocabRepository.instance.words.length} từ để xem và nghe',
         colors: const [Palette.teal, Color(0xFF166A5E)],
         onTap: () => Navigator.of(context).pushNamed(Routes.vocab),
       ),

@@ -8,6 +8,7 @@ import 'core/router.dart';
 import 'core/theme.dart';
 import 'core/widgets/fun_background.dart';
 import 'data/game_badge.dart';
+import 'data/pack/pack_store.dart';
 import 'data/vocab_repository.dart';
 import 'features/mascot/mascot_messages.dart';
 import 'features/startup/startup_error_screen.dart';
@@ -31,6 +32,7 @@ Future<void> _start() async {
         'Nunito',
       ], await rootBundle.loadString('assets/fonts/OFL.txt'));
     });
+    await PackStore.open(); // gói từ vựng đã tải (nếu có); lỗi thì dùng bản đóng gói sẵn
     await VocabRepository.load();
     await BadgeRepository.load();
     await MascotMessages.load();

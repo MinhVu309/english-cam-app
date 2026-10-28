@@ -3,6 +3,10 @@
 
   ../.venv/bin/python tool/generate_audio.py            # chạy từ thư mục gốc project
 
+Cho một gói từ vựng đặt trên hosting (xem docs/VOCAB_PACK.md): chỉ đọc các từ mà
+vocab.json của gói trỏ tới file chưa có (đường dẫn tương đối, không phải assets/...):
+  ../.venv/bin/python tool/generate_audio.py --pack pack
+
 - words/<id>.mp3, examples/<id>.mp3: đọc từ vocab.json bằng giọng TTS của macOS
   (`say`, giọng Samantha, en_US) rồi chuyển sang mp3 bằng ffmpeg.
 - sfx/*.mp3 và music/bg.mp3: tự tổng hợp bằng numpy (sóng sin), không dùng mẫu
@@ -10,6 +14,7 @@
 
 Cần: macOS (`say`), ffmpeg, numpy.
 """
+import argparse
 import json
 import subprocess
 import tempfile
@@ -132,11 +137,33 @@ def music():
 
 
 def main() -> None:
-    vocab = json.loads((ROOT / "assets" / "vocab" / "vocab.json").read_text(encoding="utf-8"))
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--pack", type=Path, help="thư mục gói: đọc <pack>/vocab.json, ghi mp3 vào <pack>/<đường dẫn trong vocab>")
+    ap.add_argument("--only-missing", action="store_true", help="bỏ qua file mp3 đã có (mặc định khi dùng --pack)")
+    ap.add_argument("--speech-only", action="store_true", help="không tạo lại sfx/nhạc nền")
+    args = ap.parse_args()
+
+    if args.pack:
+        vocab_path, out_root = args.pack / "vocab.json", args.pack
+        args.only_missing = args.speech_only = True
+    else:
+        vocab_path, out_root = ROOT / "assets" / "vocab" / "vocab.json", ROOT
+    vocab = json.loads(vocab_path.read_text(encoding="utf-8"))
     for w in vocab["words"]:
-        speak(w["en"], AUDIO / "words" / f"{w['id']}.mp3", rate=135)
-        speak(w["exampleEn"], AUDIO / "examples" / f"{w['id']}.mp3", rate=150)
-        print("speech", w["id"])
+        done = False
+        for key, text, rate in (("audio", w["en"], 135), ("exampleAudio", w["exampleEn"], 150)):
+            rel = w.get(key)
+            if not rel or (args.pack and rel.startswith("assets/")):
+                continue  # trong gói, đường dẫn assets/... là file đã đóng gói sẵn trong app
+            dst = out_root / rel
+            if args.only_missing and dst.exists():
+                continue
+            speak(text, dst, rate=rate)
+            done = True
+        if done:
+            print("speech", w["id"])
+    if args.speech_only:
+        return
 
     with tempfile.TemporaryDirectory() as tmp:
         for name, sig in {

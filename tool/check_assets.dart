@@ -36,7 +36,6 @@ void main(List<String> args) {
 
   const requiredFields = [
     'id',
-    'label',
     'en',
     'vi',
     'phonetic',
@@ -57,8 +56,15 @@ void main(List<String> args) {
       }
     }
     if (!seenIds.add(id)) errors.add('[$id] id bị trùng');
-    final label = w['label'] as String? ?? '';
-    if (!seenLabels.add(label)) errors.add('[$id] label "$label" bị trùng');
+    // `label` là tuỳ chọn: từ không có label chỉ để học, model chưa nhận diện được.
+    final label = w['label'];
+    if (label != null) {
+      if (label is! String || label.trim().isEmpty) {
+        errors.add('[$id] "label" phải là chuỗi không rỗng hoặc bỏ hẳn');
+      } else if (!seenLabels.add(label)) {
+        errors.add('[$id] label "$label" bị trùng');
+      }
+    }
     if (!categories.contains(w['category'])) {
       errors.add('[$id] category "${w['category']}" không có trong categories');
     }
@@ -91,7 +97,9 @@ void main(List<String> args) {
   }
 
   // Game: đủ từ cho "Tìm vật" và "Nghe & chọn hình", huy hiệu hợp lệ.
-  final huntCount = words.where((w) => w['hunt'] != false).length;
+  final huntCount = words
+      .where((w) => w['label'] != null && w['hunt'] != false)
+      .length;
   if (huntCount < 5) {
     errors.add(
       'Game "Tìm vật" cần ít nhất 5 từ có hunt=true (đang có $huntCount)',
@@ -181,7 +189,8 @@ void main(List<String> args) {
     }
   }
 
-  // Mọi nhãn của model phải có từ vựng, và ngược lại.
+  // Mọi nhãn của model phải có từ vựng; từ có label thì label phải nằm trong model.
+  // (Từ vựng được nhiều hơn model: từ không có label chỉ để học.)
   for (final l in labels) {
     if (!seenLabels.contains(l)) {
       errors.add('Nhãn model "$l" chưa có trong vocab.json');
@@ -193,8 +202,9 @@ void main(List<String> args) {
     }
   }
 
+  final learnOnly = words.where((w) => w['label'] == null).length;
   stdout.writeln(
-    '${labels.length} nhãn · ${words.length} từ · '
+    '${labels.length} nhãn · ${words.length} từ ($learnOnly chỉ để học) · '
     '${errors.length} lỗi · ${warnings.length} cảnh báo',
   );
   final missingAudio = warnings.where((w) => w.contains('thiếu file')).length;

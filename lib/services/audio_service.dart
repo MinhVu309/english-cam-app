@@ -2,6 +2,7 @@ import 'package:audioplayers/audioplayers.dart';
 import 'package:flutter/widgets.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../data/pack/pack_store.dart';
 import '../data/vocab_word.dart';
 
 const String _kMusicKey = 'music_on';
@@ -89,12 +90,26 @@ class AudioService with WidgetsBindingObserver {
     if (path != null) await _playSpeech(path);
   }
 
+  /// `assets/...` -> asset đóng gói; đường dẫn khác -> file trong gói từ vựng đã tải
+  /// (null nếu file không có).
+  @visibleForTesting
+  static Source? speechSource(String path) {
+    if (PackStore.isBundled(path)) return AssetSource(assetKey(path));
+    final file = PackStore.instance?.fileFor(path);
+    return file == null ? null : DeviceFileSource(file.path);
+  }
+
   Future<void> _playSpeech(String path) async {
     if (disabled) return;
     try {
+      final source = speechSource(path);
+      if (source == null) {
+        debugPrint('Speech file missing: $path');
+        return;
+      }
       final p = _speechPlayer;
       await p.stop();
-      await p.play(AssetSource(assetKey(path)));
+      await p.play(source);
     } catch (e) {
       debugPrint('Speech failed ($path): $e');
     }

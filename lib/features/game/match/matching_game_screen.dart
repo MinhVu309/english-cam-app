@@ -402,11 +402,15 @@ class _OptionCardState extends State<_OptionCard>
                   ),
                   if (widget.revealText) ...[
                     const SizedBox(height: 6),
-                    Text(
-                      word.en,
-                      style: const TextStyle(
-                        fontSize: 26,
-                        fontWeight: FontWeight.w900,
+                    // Từ dài (kể cả từ tải từ gói cập nhật) co lại thay vì xuống dòng và tràn thẻ.
+                    FittedBox(
+                      fit: BoxFit.scaleDown,
+                      child: Text(
+                        word.en,
+                        style: const TextStyle(
+                          fontSize: 26,
+                          fontWeight: FontWeight.w900,
+                        ),
                       ),
                     ),
                   ],

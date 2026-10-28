@@ -1,5 +1,7 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
     <uses-permission android:name="android.permission.CAMERA"/>
+    <!-- Chỉ để tải gói từ vựng khi phụ huynh bấm "Cập nhật từ vựng"; app không gửi dữ liệu nào đi. -->
+    <uses-permission android:name="android.permission.INTERNET"/>
     <uses-feature android:name="android.hardware.camera" android:required="false"/>
     <application
         android:label="English Cam"

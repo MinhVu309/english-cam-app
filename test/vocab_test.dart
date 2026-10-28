@@ -23,26 +23,34 @@ void main() {
     await ProgressService.instance.init();
   });
 
-  test('vocab.json khớp labels.txt (24 nhãn, đủ trường)', () async {
-    final labels = (await rootBundle.loadString(
-      'assets/ml/labels.txt',
-    )).split('\n').map((l) => l.trim()).where((l) => l.isNotEmpty).toList();
+  test(
+    'vocab.json bao phủ labels.txt (24 nhãn) và có thêm từ chỉ để học',
+    () async {
+      final labels = (await rootBundle.loadString(
+        'assets/ml/labels.txt',
+      )).split('\n').map((l) => l.trim()).where((l) => l.isNotEmpty).toList();
 
-    expect(labels, hasLength(24));
-    expect(repo.words.map((w) => w.label).toSet(), labels.toSet());
-    for (final w in repo.words) {
-      expect(w.en, isNotEmpty);
-      expect(w.vi, isNotEmpty);
-      expect(w.phonetic, isNotEmpty);
-      expect(repo.category(w.category), isNotNull, reason: w.id);
-      expect(w.audio, endsWith('/${w.id}.mp3'));
-    }
-    expect(repo.byLabel('teddy_bear')!.en, 'teddy bear');
-  });
+      expect(labels, hasLength(24));
+      final withLabel = repo.words.where((w) => w.label != null).toList();
+      expect(withLabel.map((w) => w.label).toSet(), labels.toSet());
+      expect(repo.words.length, greaterThan(labels.length));
+      // Từ không có label chỉ để học: không làm đích game "Tìm vật".
+      for (final w in repo.words.where((w) => w.label == null)) {
+        expect(w.hunt, isFalse, reason: w.id);
+        expect(w.hasPicture, isTrue, reason: w.id);
+      }
+      for (final w in repo.words) {
+        expect(w.en, isNotEmpty);
+        expect(w.vi, isNotEmpty);
+        expect(w.phonetic, isNotEmpty);
+        expect(repo.category(w.category), isNotNull, reason: w.id);
+        expect(w.audio, endsWith('/${w.id}.mp3'));
+      }
+      expect(repo.byLabel('teddy_bear')!.en, 'teddy bear');
+    },
+  );
 
-  testWidgets('Danh sách: hiện đủ 24 từ, tìm kiếm và lọc chủ đề', (
-    tester,
-  ) async {
+  testWidgets('Danh sách: hiện đủ từ, tìm kiếm và lọc chủ đề', (tester) async {
     tester.view.physicalSize = const Size(2400, 40000);
     tester.view.devicePixelRatio = 2;
     addTearDown(tester.view.reset);

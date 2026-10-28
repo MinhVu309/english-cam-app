@@ -36,7 +36,6 @@ Color? _parseColor(String? hex) {
 class VocabWord {
   const VocabWord({
     required this.id,
-    required this.label,
     required this.en,
     required this.vi,
     required this.phonetic,
@@ -44,6 +43,7 @@ class VocabWord {
     required this.exampleVi,
     required this.audio,
     required this.category,
+    this.label,
     this.exampleAudio,
     this.image,
     this.emoji,
@@ -52,7 +52,7 @@ class VocabWord {
 
   factory VocabWord.fromJson(Map<String, dynamic> j) => VocabWord(
     id: j['id'] as String,
-    label: j['label'] as String,
+    label: j['label'] as String?,
     en: j['en'] as String,
     vi: j['vi'] as String,
     phonetic: j['phonetic'] as String,
@@ -63,30 +63,33 @@ class VocabWord {
     category: j['category'] as String,
     image: j['image'] as String?,
     emoji: j['emoji'] as String?,
-    hunt: j['hunt'] as bool? ?? true,
+    // Từ không nhận diện được thì không thể làm đích của game "Tìm vật".
+    hunt: j['label'] != null && (j['hunt'] as bool? ?? true),
   );
 
   /// Khoá nội bộ, cũng là tên file âm thanh.
   final String id;
 
-  /// Nhãn đúng như trong labels.txt của model.
-  final String label;
+  /// Nhãn đúng như trong labels.txt của model. null: từ chỉ để học, model chưa nhận
+  /// diện được (thêm `label` vào vocab.json khi model được nâng cấp).
+  final String? label;
   final String en;
   final String vi;
   final String phonetic;
   final String exampleEn;
   final String exampleVi;
 
-  /// Đường dẫn asset mp3 của từ / câu ví dụ.
+  /// Đường dẫn mp3 của từ / câu ví dụ: `assets/...` (đóng gói sẵn) hoặc đường dẫn
+  /// tương đối trong gói từ vựng đã tải (vd. `audio/words/dog.mp3`).
   final String audio;
   final String? exampleAudio;
   final String category;
 
-  /// Ảnh minh hoạ (asset). Nếu không có thì dùng [emoji], cuối cùng là chữ cái.
+  /// Ảnh minh hoạ (cùng quy ước đường dẫn như [audio]). Nếu không có thì dùng [emoji], cuối cùng là chữ cái.
   final String? image;
   final String? emoji;
 
-  /// Có dùng làm đích của game "Tìm vật" không (chỉ nhãn model nhận ổn định).
+  /// Có dùng làm đích của game "Tìm vật" không (cần có [label] và model nhận ổn định).
   final bool hunt;
 
   /// Có hình minh hoạ thật (ảnh hoặc emoji), dùng được trong game "Nghe & chọn hình".

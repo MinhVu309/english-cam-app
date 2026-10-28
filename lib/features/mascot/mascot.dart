@@ -19,8 +19,12 @@ enum MascotMood {
   oops,
 }
 
-/// "Cam": nhân vật tự vẽ của app, một quả cam tròn có cái lá trên đầu
+/// "Cam": nhân vật của app, một quả cam tròn có cái lá trên đầu
 /// (cam cũng là "orange" trong tiếng Anh). Không dựa trên nhân vật có bản quyền.
+///
+/// Hiển thị bằng ảnh 3D do nhóm tự dựng (`assets/mascot/cam_<biểu cảm>.png`),
+/// nhún nhẹ khi "thở". Nếu không nạp được ảnh thì rơi về bản vẽ 2D
+/// ([MascotPainter]) để app không bao giờ thiếu Cam.
 class Mascot extends StatefulWidget {
   const Mascot({
     super.key,
@@ -38,6 +42,14 @@ class Mascot extends StatefulWidget {
   /// Tắt hoạt hình toàn cục (dùng trong test để `pumpAndSettle` kết thúc được).
   static bool animationsEnabled = true;
 
+  /// Ảnh 3D tương ứng với từng biểu cảm.
+  static String assetFor(MascotMood mood) => switch (mood) {
+    MascotMood.happy => 'assets/mascot/cam_happy.png',
+    MascotMood.cheer => 'assets/mascot/cam_cheer.png',
+    MascotMood.thinking => 'assets/mascot/cam_thinking.png',
+    MascotMood.oops => 'assets/mascot/cam_oops.png',
+  };
+
   @override
   State<Mascot> createState() => _MascotState();
 }
@@ -48,6 +60,8 @@ class _MascotState extends State<Mascot> with SingleTickerProviderStateMixin {
     duration: const Duration(seconds: 4),
   );
 
+  static bool _precached = false;
+
   bool _shouldAnimate(BuildContext context) =>
       widget.animate &&
       Mascot.animationsEnabled &&
@@ -56,6 +70,18 @@ class _MascotState extends State<Mascot> with SingleTickerProviderStateMixin {
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
+    // Nạp sẵn cả 4 ảnh một lần để đổi biểu cảm không bị nháy trống.
+    // Bỏ qua khi tắt hoạt hình (test) để không để lại việc giải mã ảnh dở dang.
+    if (!_precached && Mascot.animationsEnabled) {
+      _precached = true;
+      for (final mood in MascotMood.values) {
+        precacheImage(
+          AssetImage(Mascot.assetFor(mood)),
+          context,
+          onError: (error, stackTrace) {},
+        );
+      }
+    }
     if (_shouldAnimate(context)) {
       if (!_controller.isAnimating) _controller.repeat();
     } else {
@@ -76,8 +102,32 @@ class _MascotState extends State<Mascot> with SingleTickerProviderStateMixin {
         dimension: widget.size,
         child: AnimatedBuilder(
           animation: _controller,
-          builder: (context, _) => CustomPaint(
-            painter: MascotPainter(widget.mood, _controller.value),
+          builder: (context, child) {
+            // Thở: nhún lên xuống và co giãn nhẹ, chân luôn chạm "đất".
+            final w = math.sin(_controller.value * 2 * math.pi);
+            return Transform.translate(
+              offset: Offset(0, -w * 0.012 * widget.size),
+              child: Transform.scale(
+                alignment: Alignment.bottomCenter,
+                scaleX: 1 - 0.01 * w,
+                scaleY: 1 + 0.015 * w,
+                child: child,
+              ),
+            );
+          },
+          child: AnimatedSwitcher(
+            duration: const Duration(milliseconds: 180),
+            child: Image.asset(
+              Mascot.assetFor(widget.mood),
+              key: ValueKey(widget.mood),
+              fit: BoxFit.contain,
+              alignment: Alignment.bottomCenter,
+              gaplessPlayback: true,
+              filterQuality: FilterQuality.medium,
+              errorBuilder: (context, error, stackTrace) => CustomPaint(
+                painter: MascotPainter(widget.mood, 0),
+              ),
+            ),
           ),
         ),
       ),
