@@ -114,9 +114,13 @@ class _VocabListScreenState extends State<VocabListScreen> {
                     _chip('Tất cả', null),
                     for (final c in _repo.categories)
                       _chip(
-                        '${c.emoji ?? ''} ${c.vi}'.trim(),
+                        // Có ảnh đại diện thì dùng ảnh (avatar của chip) thay cho emoji.
+                        c.image != null
+                            ? c.vi
+                            : '${c.emoji ?? ''} ${c.vi}'.trim(),
                         c.id,
                         tint: c.color,
+                        image: c.image,
                       ),
                   ],
                 ),
@@ -129,10 +133,20 @@ class _VocabListScreenState extends State<VocabListScreen> {
     );
   }
 
-  Widget _chip(String label, String? id, {Color? tint}) {
+  Widget _chip(String label, String? id, {Color? tint, String? image}) {
     return Padding(
       padding: const EdgeInsets.only(right: 8),
       child: ChoiceChip(
+        avatar: image == null
+            ? null
+            : ClipOval(
+                child: Image.asset(
+                  image,
+                  width: 32,
+                  height: 32,
+                  fit: BoxFit.cover,
+                ),
+              ),
         label: Text(label, style: const TextStyle(fontSize: 18)),
         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 12),
         selected: _category == id,

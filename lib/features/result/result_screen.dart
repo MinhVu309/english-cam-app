@@ -5,22 +5,32 @@ import 'package:flutter/material.dart';
 
 import '../mascot/mascot_host.dart';
 
+import '../../core/palette.dart';
 import '../../core/router.dart';
+import '../../core/uuid.dart';
 import '../../core/widgets/bouncy_tap.dart';
+import '../../data/feedback/recognition_feedback.dart';
 import '../../data/vocab_repository.dart';
 import '../../data/vocab_word.dart';
 import '../../ml/classifier_service.dart';
+import '../../services/feedback_service.dart';
+import '../../services/pack_watcher.dart';
+import '../../services/sync_service.dart';
 import '../../ml/object_localizer.dart';
 import '../../services/audio_service.dart';
 import '../mascot/mascot.dart';
 import '../vocab/word_visual.dart';
 import 'detection_box_painter.dart';
+import 'type_answer_dialog.dart';
 
 /// Pop `true` nếu người dùng muốn chụp lại.
 class ResultScreen extends StatefulWidget {
-  const ResultScreen({super.key, required this.imagePath});
+  const ResultScreen({super.key, required this.imagePath, this.classify});
 
   final String imagePath;
+
+  /// Hàm phân loại ảnh; mặc định chạy model thật. Test truyền kết quả giả (model cần thư viện native).
+  final Future<ClassificationResult> Function(String path)? classify;
 
   @override
   State<ResultScreen> createState() => _ResultScreenState();
@@ -32,6 +42,16 @@ class _ResultScreenState extends State<ResultScreen> {
   /// Nhãn do bé/phụ huynh chọn lại ở "Không đúng?".
   String? _override;
   bool _showAlternatives = false;
+
+  /// Từ do bé/phụ huynh gõ ở "Khác…" và có trong từ vựng (kể cả từ chỉ để học, chưa có nhãn model).
+  VocabWord? _overrideWord;
+
+  /// Chữ đã gõ nhưng app chưa có từ này.
+  String? _unknownTyped;
+
+  /// Mã góp ý của ảnh chụp này (chọn lại đáp án thì cập nhật cùng một góp ý) và đã cảm ơn chưa.
+  String _photoId = newUuid();
+  bool _thanked = false;
 
   /// Khung quanh vật (ước lượng) và trạng thái đang tìm.
   DetectionBox? _box;
@@ -73,7 +93,10 @@ class _ResultScreenState extends State<ResultScreen> {
   }
 
   Future<ClassificationResult> _classify() async {
-    final r = await ClassifierService.instance.classifyFile(widget.imagePath);
+    final r =
+        await (widget.classify ?? ClassifierService.instance.classifyFile)(
+          widget.imagePath,
+        );
     debugPrint(
       '[perf] classify ${r.inferenceMs}ms best=${r.best.label} '
       'p=${r.best.probability.toStringAsFixed(2)}',
@@ -81,8 +104,77 @@ class _ResultScreenState extends State<ResultScreen> {
     if (!_disposed && r.isConfident) {
       _locate(r.best.label);
       _speak(r.best.label);
+      final word = VocabRepository.instance.byLabel(r.best.label);
+      if (word != null) SyncService.instance.recordScan(word.id);
     }
     return r;
+  }
+
+  /// Lưu góp ý (vào hàng đợi trên máy, tự gửi lên backend khi có mạng). Chỉ gửi chữ, không gửi ảnh.
+  void _sendFeedback(
+    ClassificationResult r, {
+    required FeedbackSource source,
+    required String text,
+    String? wordId,
+  }) {
+    FeedbackService.instance.save(
+      RecognitionFeedback(
+        id: _photoId,
+        predictedLabel: r.best.label,
+        predictedProbability: r.best.probability,
+        top3: [
+          for (final p in r.top) FeedbackCandidate(p.label, p.probability),
+        ],
+        correctWordId: wordId,
+        correctText: text,
+        source: source,
+        modelSource: ClassifierService.instance.source.name,
+        vocabVersion: PackWatcher.instance.currentVersion,
+      ),
+    );
+    if (!_thanked && mounted) setState(() => _thanked = true);
+  }
+
+  void _pickSuggestion(ClassificationResult r, Prediction p) {
+    final word = VocabRepository.instance.byLabel(p.label);
+    setState(() {
+      _override = p.label;
+      _overrideWord = null;
+      _unknownTyped = null;
+    });
+    _locate(p.label);
+    _speak(p.label);
+    _sendFeedback(
+      r,
+      source: FeedbackSource.top3,
+      text: word?.en ?? p.label,
+      wordId: word?.id,
+    );
+  }
+
+  /// "Khác…": gõ tên đúng. Khớp một từ trong từ vựng thì hiện từ đó; chưa có thì ghi nhận từ mới để nhóm cân nhắc thêm.
+  Future<void> _askOther(ClassificationResult r) async {
+    final answer = await showTypeAnswerDialog(context);
+    if (answer == null || !mounted) return;
+    final word = answer.word;
+    setState(() {
+      _overrideWord = word;
+      _override = word?.label;
+      _unknownTyped = word == null ? answer.text : null;
+      _box = null;
+      _locating = false;
+      _locateToken++;
+    });
+    if (word != null) {
+      if (word.label != null) _locate(word.label!);
+      AudioService.instance.playWord(word);
+    }
+    _sendFeedback(
+      r,
+      source: FeedbackSource.typed,
+      text: word?.en ?? answer.text,
+      wordId: word?.id,
+    );
   }
 
   /// Tự đọc từ vừa nhận diện.
@@ -122,6 +214,10 @@ class _ResultScreenState extends State<ResultScreen> {
   void _retry() {
     setState(() {
       _override = null;
+      _overrideWord = null;
+      _unknownTyped = null;
+      _thanked = false;
+      _photoId = newUuid();
       _showAlternatives = false;
       _box = null;
       _locating = false;
@@ -234,12 +330,16 @@ class _ResultScreenState extends State<ResultScreen> {
   Widget _buildResult(ClassificationResult r) {
     final repo = VocabRepository.instance;
     final label = _override ?? (r.isConfident ? r.best.label : null);
-    final word = label == null ? null : repo.byLabel(label);
+    final word = _unknownTyped != null
+        ? null
+        : (_overrideWord ?? (label == null ? null : repo.byLabel(label)));
     return SingleChildScrollView(
       child: Column(
         children: [
           if (word != null)
             _WordBanner(word: word)
+          else if (_unknownTyped != null)
+            _UnknownWordCard(text: _unknownTyped!)
           else
             const Column(
               children: [
@@ -281,14 +381,21 @@ class _ResultScreenState extends State<ResultScreen> {
                       vertical: 14,
                     ),
                     selected: label == p.label,
-                    onSelected: (_) {
-                      setState(() => _override = p.label);
-                      _locate(p.label);
-                      _speak(p.label);
-                    },
+                    onSelected: (_) => _pickSuggestion(r, p),
                   ),
+                ActionChip(
+                  key: const Key('other-answer'),
+                  avatar: const Icon(Icons.edit_rounded, size: 24),
+                  label: const Text('Khác…', style: TextStyle(fontSize: 22)),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 14,
+                  ),
+                  onPressed: () => _askOther(r),
+                ),
               ],
             ),
+            if (_thanked) const _ThanksNote(),
             const SizedBox(height: 12),
             OutlinedButton.icon(
               onPressed: () => Navigator.of(context).pushNamed(Routes.vocab),
@@ -318,6 +425,66 @@ class _ResultScreenState extends State<ResultScreen> {
           ),
         ],
       ),
+    );
+  }
+}
+
+/// Lời cảm ơn sau khi bé/phụ huynh sửa kết quả nhận diện.
+class _ThanksNote extends StatelessWidget {
+  const _ThanksNote();
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(top: 12),
+      child: Container(
+        key: const Key('feedback-thanks'),
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(
+          color: Palette.good,
+          borderRadius: BorderRadius.circular(20),
+        ),
+        child: const Row(
+          children: [
+            Icon(Icons.favorite_rounded, size: 28, color: Palette.orange),
+            SizedBox(width: 10),
+            Expanded(
+              child: Text(
+                'Cảm ơn bạn! Sự góp ý của bạn là đóng góp lớn cho ứng dụng sau này.',
+                style: TextStyle(fontSize: 20, fontWeight: FontWeight.w700),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// Từ bé/phụ huynh gõ mà app chưa có.
+class _UnknownWordCard extends StatelessWidget {
+  const _UnknownWordCard({required this.text});
+
+  final String text;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      key: const Key('unknown-word'),
+      children: [
+        const Mascot(mood: MascotMood.cheer, size: 72),
+        const SizedBox(height: 4),
+        Text(
+          '"$text"',
+          textAlign: TextAlign.center,
+          style: const TextStyle(fontSize: 34, fontWeight: FontWeight.w900),
+        ),
+        const Text(
+          'Mình chưa biết từ này, cảm ơn bạn đã dạy Cam!',
+          textAlign: TextAlign.center,
+          style: TextStyle(fontSize: 22),
+        ),
+      ],
     );
   }
 }

@@ -72,14 +72,20 @@ class PackUpdater {
     );
   }
 
+  /// Chỉ hỏi máy chủ bản mới nhất (tải đúng một `manifest.json` nhỏ, không tải gì khác).
+  /// Dùng để biết có bản từ vựng mới hay chưa mà không phải tải cả gói.
+  Future<PackManifest> fetchLatest(String baseUrl) {
+    final base = parseBase(baseUrl);
+    return _withClient((client) => _fetchManifest(client, base));
+  }
+
   /// Kiểm tra và cập nhật. [onProgress] nhận (số file xong, tổng số file).
   Future<PackUpdateResult> update(
     String baseUrl, {
     void Function(int done, int total)? onProgress,
   }) async {
     final base = parseBase(baseUrl);
-    final client = _clientFactory()..connectionTimeout = _kConnectTimeout;
-    try {
+    return _withClient((client) async {
       final manifest = await _fetchManifest(client, base);
       final installed = store.readInstalled();
       if (installed != null && installed.version >= manifest.version) {
@@ -113,6 +119,14 @@ class PackUpdater {
         rethrow;
       }
       return PackUpdateResult(changed: true, manifest: manifest);
+    });
+  }
+
+  /// Tạo HttpClient, chạy [body], đổi lỗi mạng/định dạng sang [PackUpdateException] tiếng Việt, rồi đóng client.
+  Future<T> _withClient<T>(Future<T> Function(HttpClient client) body) async {
+    final client = _clientFactory()..connectionTimeout = _kConnectTimeout;
+    try {
+      return await body(client);
     } on PackUpdateException {
       rethrow;
     } on FormatException catch (e) {

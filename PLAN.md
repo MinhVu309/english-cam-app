@@ -12,8 +12,8 @@
 - Test accuracy 0.888 (số chưa chính thức). **Điểm yếu đã biết:** `apple` recall chỉ 0.07 (hay bị đoán thành `table`/`book`); `table` hay bị đoán nhầm (precision 0.37).
 
 ## 1. Ràng buộc
-- Flutter (Dart), Android trước. Không ML Kit / API cloud; chỉ `tflite_flutter`. Offline hoàn toàn.
-- Trẻ em: nút lớn, ít chữ, không quảng cáo, không thu thập dữ liệu.
+- Flutter (Dart), Android trước. Không ML Kit / API cloud cho nhận diện; chỉ `tflite_flutter`, ảnh camera không rời máy. App vẫn dùng được **hoàn toàn offline** (chế độ khách).
+- Trẻ em: nút lớn, ít chữ, không quảng cáo. *Cập nhật 2026-10-30:* có backend ASP.NET (`../english-cam-api`, kế hoạch ở `docs/BACKEND_PLAN.md`) cho từ vựng, trò chơi, đăng nhập và dashboard phụ huynh. Khi phụ huynh đăng nhập, app chỉ gửi dữ liệu học tập tối thiểu (biệt danh, từ đã học, kết quả ván chơi, số phút); không gửi ảnh, tên thật, vị trí. Phụ huynh xoá được toàn bộ.
 
 ## 2. Cấu trúc
 ```

@@ -3,6 +3,7 @@ import 'dart:math';
 import 'package:english_cam/core/theme.dart';
 import 'package:english_cam/data/game_badge.dart';
 import 'package:english_cam/data/vocab_repository.dart';
+import 'package:english_cam/data/vocab_word.dart';
 import 'package:english_cam/features/game/hunt/hunt_logic.dart';
 import 'package:english_cam/features/game/match/match_questions.dart';
 import 'package:english_cam/features/game/match/matching_game_screen.dart';
@@ -38,12 +39,22 @@ void main() {
     test(
       'chỉ dùng từ có hình; mỗi câu có 4 đáp án khác nhau chứa đáp án đúng',
       () {
-        final pool = matchPool(repo.words);
+        // Từ không có hình (vd. từ mới của gói cập nhật chưa kèm ảnh/emoji) phải bị loại khỏi game.
+        final noPicture = VocabWord.fromJson({
+          'id': 'zzz_no_pic',
+          'en': 'zzz',
+          'vi': 'zzz',
+          'phonetic': '/z/',
+          'exampleEn': 'x',
+          'exampleVi': 'y',
+          'audio': 'audio/words/zzz_no_pic.mp3',
+          'category': repo.words.first.category,
+        });
+        expect(noPicture.hasPicture, isFalse);
+        final pool = matchPool([...repo.words, noPicture]);
         expect(pool.every((w) => w.hasPicture), isTrue);
-        expect(
-          pool.length,
-          lessThan(repo.words.length),
-        ); // table, towel không có hình
+        expect(pool.length, repo.words.length);
+        expect(pool.contains(noPicture), isFalse);
 
         final qs = buildMatchQuestions(pool, Random(3));
         expect(qs, hasLength(kMatchQuestions));

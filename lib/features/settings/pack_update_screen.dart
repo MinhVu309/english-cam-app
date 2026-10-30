@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 
 import '../../core/palette.dart';
@@ -7,10 +9,19 @@ import '../../data/pack/pack_updater.dart';
 import '../../data/vocab_repository.dart';
 import '../../ml/classifier_service.dart';
 import '../../services/app_settings.dart';
+import '../../services/pack_watcher.dart';
 
 /// Cập nhật gói từ vựng (và model nếu gói có) từ hosting. Nằm sau cổng phụ huynh.
 class PackUpdateScreen extends StatefulWidget {
-  const PackUpdateScreen({super.key, this.updater, this.reloadModel});
+  const PackUpdateScreen({
+    super.key,
+    this.updater,
+    this.reloadModel,
+    this.watcher,
+  });
+
+  /// Bộ theo dõi bản mới; mặc định là [PackWatcher.instance]. Test truyền bản có máy chủ giả.
+  final PackWatcher? watcher;
 
   /// Cho test thay bằng bản dùng máy chủ giả.
   final PackUpdater? updater;
@@ -26,13 +37,36 @@ class _PackUpdateScreenState extends State<PackUpdateScreen> {
   late final TextEditingController _url = TextEditingController(
     text: AppSettings.instance.packUrl,
   );
+  PackWatcher get _watcher => widget.watcher ?? PackWatcher.instance;
   bool _busy = false;
+  bool _checking = true; // đang hỏi máy chủ có bản mới không (khi vừa mở màn)
   bool _changed = false; // đã đổi dữ liệu: về Home phải dựng lại
   double? _progress;
   String? _message;
   bool _isError = false;
 
   PackStore? get _store => PackStore.instance;
+
+  @override
+  void initState() {
+    super.initState();
+    _watcher.addListener(_onWatcher);
+    unawaited(_checkNow());
+  }
+
+  /// Có bản mới hơn xuất hiện trong lúc màn đang mở: bỏ dòng kết quả của lần cập nhật trước (nó nói bản cũ).
+  void _onWatcher() {
+    if (!mounted || _busy || _watcher.available == null || _message == null) {
+      return;
+    }
+    setState(() => _message = null);
+  }
+
+  /// Vừa mở màn: hỏi ngay máy chủ có bản mới không, để nút bấm nói rõ việc nó sẽ làm.
+  Future<void> _checkNow() async {
+    await _watcher.check(force: true);
+    if (mounted) setState(() => _checking = false);
+  }
 
   Future<void> _reloadAll() async {
     await VocabRepository.load();
@@ -68,11 +102,13 @@ class _PackUpdateScreenState extends State<PackUpdateScreen> {
       );
       await AppSettings.instance.setPackUrl(url);
       if (!result.changed) {
+        _watcher.markUpdated();
         _say('Đã là bản mới nhất (bản ${result.manifest.version}).');
         return;
       }
       await _reloadAll();
       _changed = true;
+      _watcher.markUpdated();
       final words = VocabRepository.instance.words.length;
       var text = 'Đã cập nhật lên bản ${result.manifest.version}: $words từ.';
       if (result.manifest.hasModel) {
@@ -140,8 +176,48 @@ class _PackUpdateScreenState extends State<PackUpdateScreen> {
 
   @override
   void dispose() {
+    _watcher.removeListener(_onWatcher);
     _url.dispose();
     super.dispose();
+  }
+
+  /// Dòng trạng thái: đang kiểm tra / có bản mới (kèm ghi chú) / đã mới nhất / chưa kiểm tra được.
+  Widget _statusLine() {
+    const style = TextStyle(fontSize: 20, fontWeight: FontWeight.w700);
+    final fresh = _watcher.available;
+    if (_checking && fresh == null) {
+      return const Text(
+        'Đang kiểm tra bản mới…',
+        key: Key('pack-status'),
+        style: TextStyle(fontSize: 20, color: Palette.inkSoft),
+      );
+    }
+    if (fresh != null) {
+      return Column(
+        key: const Key('pack-status'),
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Có từ vựng mới: bản ${fresh.version}',
+            style: style.copyWith(color: Palette.orange),
+          ),
+          if (fresh.notes != null)
+            Text(fresh.notes!, style: const TextStyle(fontSize: 18)),
+        ],
+      );
+    }
+    if (_watcher.lastError != null) {
+      return Text(
+        'Chưa kiểm tra được bản mới (${_watcher.lastError}).',
+        key: const Key('pack-status'),
+        style: const TextStyle(fontSize: 18, color: Palette.inkSoft),
+      );
+    }
+    return const Text(
+      'Đã là bản mới nhất.',
+      key: Key('pack-status'),
+      style: style,
+    );
   }
 
   @override
@@ -188,25 +264,9 @@ class _PackUpdateScreenState extends State<PackUpdateScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text(
-                      'Địa chỉ gói từ vựng',
-                      style: TextStyle(
-                        fontSize: 20,
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    TextField(
-                      key: const Key('pack-url'),
-                      controller: _url,
-                      enabled: !_busy,
-                      keyboardType: TextInputType.url,
-                      autocorrect: false,
-                      style: const TextStyle(fontSize: 18),
-                      decoration: const InputDecoration(
-                        hintText: 'https://ten-ban.github.io/english-cam-pack/',
-                        border: OutlineInputBorder(),
-                      ),
+                    ListenableBuilder(
+                      listenable: _watcher,
+                      builder: (context, _) => _statusLine(),
                     ),
                     const SizedBox(height: 12),
                     SizedBox(
@@ -216,9 +276,17 @@ class _PackUpdateScreenState extends State<PackUpdateScreen> {
                         key: const Key('pack-update'),
                         onPressed: _busy ? null : _update,
                         icon: const Icon(Icons.cloud_download_rounded),
-                        label: const Text(
-                          'Kiểm tra & cập nhật',
-                          style: TextStyle(fontSize: 20),
+                        label: ListenableBuilder(
+                          listenable: _watcher,
+                          builder: (context, _) {
+                            final v = _watcher.available?.version;
+                            return Text(
+                              v == null
+                                  ? 'Kiểm tra & cập nhật'
+                                  : 'Cập nhật ngay (bản $v)',
+                              style: const TextStyle(fontSize: 20),
+                            );
+                          },
                         ),
                       ),
                     ),
@@ -240,6 +308,46 @@ class _PackUpdateScreenState extends State<PackUpdateScreen> {
                         ),
                       ),
                     ],
+                  ],
+                ),
+              ),
+              // Địa chỉ gói mặc định là chính backend của app; chỉ đổi khi muốn dùng hosting tĩnh khác (VOCAB_PACK.md).
+              Theme(
+                data: Theme.of(
+                  context,
+                ).copyWith(dividerColor: Colors.transparent),
+                child: ExpansionTile(
+                  key: const Key('pack-advanced'),
+                  title: const Text(
+                    'Nâng cao: dùng địa chỉ gói khác',
+                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
+                  ),
+                  childrenPadding: const EdgeInsets.fromLTRB(8, 0, 8, 12),
+                  children: [
+                    TextField(
+                      key: const Key('pack-url'),
+                      controller: _url,
+                      enabled: !_busy,
+                      keyboardType: TextInputType.url,
+                      autocorrect: false,
+                      style: const TextStyle(fontSize: 18),
+                      decoration: const InputDecoration(
+                        border: OutlineInputBorder(),
+                      ),
+                    ),
+                    Align(
+                      alignment: Alignment.centerLeft,
+                      child: TextButton(
+                        key: const Key('pack-url-default'),
+                        onPressed: _busy
+                            ? null
+                            : () => setState(() => _url.text = kDefaultPackUrl),
+                        child: const Text(
+                          'Dùng lại địa chỉ mặc định',
+                          style: TextStyle(fontSize: 18),
+                        ),
+                      ),
+                    ),
                   ],
                 ),
               ),

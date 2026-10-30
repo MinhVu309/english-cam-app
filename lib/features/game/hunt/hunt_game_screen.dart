@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 import 'dart:math';
 
@@ -12,6 +13,7 @@ import '../../../data/vocab_word.dart';
 import '../../../ml/classifier_service.dart';
 import '../../../services/audio_service.dart';
 import '../../../services/game_progress.dart';
+import '../../../services/sync_service.dart';
 import '../../mascot/mascot.dart';
 import '../../vocab/word_visual.dart';
 import '../badge_dialog.dart';
@@ -42,6 +44,9 @@ class _HuntGameScreenState extends State<HuntGameScreen> {
   void initState() {
     super.initState();
     _pickTarget();
+    if (SyncService.instance.active) {
+      unawaited(SyncService.instance.fetchHuntTargets(10));
+    }
   }
 
   void _pickTarget() {
@@ -52,11 +57,16 @@ class _HuntGameScreenState extends State<HuntGameScreen> {
       for (final w in all)
         if (labels.isEmpty || labels.contains(w.label)) w,
     ];
-    _targetOrNull = pickHuntTarget(
-      recognized.any((w) => w.hunt) ? recognized : all,
-      _rng,
-      previous: _targetOrNull?.id,
-    );
+    final pool = recognized.any((w) => w.hunt) ? recognized : all;
+    // Máy chủ gợi ý vật bé ít thuộc (khi đã đăng nhập); không có gợi ý hợp lệ thì chọn ngẫu nhiên như trước.
+    final hinted = [
+      for (final id in SyncService.instance.huntHints)
+        for (final w in pool)
+          if (w.id == id && w.hunt && w.id != _targetOrNull?.id) w,
+    ];
+    _targetOrNull = hinted.isNotEmpty
+        ? hinted.first
+        : pickHuntTarget(pool, _rng, previous: _targetOrNull?.id);
     _phase = _Phase.prompt;
     _photoPath = null;
     WidgetsBinding.instance.addPostFrameCallback((_) => _speak());
@@ -101,6 +111,11 @@ class _HuntGameScreenState extends State<HuntGameScreen> {
   Future<void> _succeed(int stars) async {
     AudioService.instance.playSfx(Sfx.correct);
     final badges = await GameProgress.instance.recordFound(starsEarned: stars);
+    SyncService.instance.recordHuntFound(
+      wordId: _target.id,
+      byParent: stars < 2,
+      stars: stars,
+    );
     if (!mounted) return;
     setState(() {
       _starsEarned = stars;

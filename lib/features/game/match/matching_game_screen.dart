@@ -14,6 +14,7 @@ import '../../../data/vocab_repository.dart';
 import '../../../data/vocab_word.dart';
 import '../../../services/audio_service.dart';
 import '../../../services/game_progress.dart';
+import '../../../services/sync_service.dart';
 import '../../mascot/mascot.dart';
 import '../../vocab/word_visual.dart';
 import '../badge_dialog.dart';
@@ -31,8 +32,15 @@ class MatchingGameScreen extends StatefulWidget {
 }
 
 class _MatchingGameScreenState extends State<MatchingGameScreen> {
-  late List<MatchQuestion> _questions;
+  List<MatchQuestion> _questions = const [];
   int _index = 0;
+
+  /// Đang chờ máy chủ chọn câu hỏi (chỉ khi bé đã đăng nhập).
+  bool _loading = false;
+
+  /// Số lần bé chọn ở từng câu đã xong, để máy chủ tự tính sao và cập nhật độ thuộc từ.
+  final List<MatchAnswer> _results = [];
+  DateTime _startedAt = DateTime.now();
 
   /// Số câu đúng ngay lần chọn đầu tiên = số sao của ván này.
   int _stars = 0;
@@ -58,14 +66,56 @@ class _MatchingGameScreenState extends State<MatchingGameScreen> {
     super.dispose();
   }
 
+  List<MatchQuestion> _localQuestions() => buildMatchQuestions(
+    matchPool(VocabRepository.instance.words),
+    widget.random ?? Random(),
+  );
+
+  /// Câu hỏi máy chủ chọn → [MatchQuestion]. Thiếu từ nào (bản từ vựng trên máy cũ hơn) thì bỏ cả bộ, dùng câu hỏi cục bộ.
+  List<MatchQuestion>? _fromServer(List<ServerQuestion>? server) {
+    if (server == null || server.isEmpty) return null;
+    final repo = VocabRepository.instance;
+    final out = <MatchQuestion>[];
+    for (final q in server) {
+      final target = repo.byId(q.target);
+      final options = [for (final id in q.options) repo.byId(id)];
+      if (target == null ||
+          options.length < 2 ||
+          options.any((w) => w == null || !w.hasPicture) ||
+          !options.any((w) => w!.id == target.id)) {
+        return null;
+      }
+      out.add(MatchQuestion(target, [for (final w in options) w!]));
+    }
+    return out;
+  }
+
   void _newRound() {
     _timer?.cancel();
-    final pool = matchPool(VocabRepository.instance.words);
+    // Khách: tạo câu hỏi ngay trên máy như trước. Đã đăng nhập: nhờ máy chủ chọn theo độ thuộc từ của bé,
+    // quá 3 giây hoặc lỗi thì tự tạo (bé không phải chờ máy chủ "ngủ" dậy).
+    if (!SyncService.instance.active) {
+      _startRound(_localQuestions());
+      return;
+    }
     setState(() {
-      _questions = buildMatchQuestions(pool, widget.random ?? Random());
+      _loading = true;
+      _finished = false;
+    });
+    SyncService.instance.fetchMatchQuestions(kMatchQuestions).then((server) {
+      if (mounted) _startRound(_fromServer(server) ?? _localQuestions());
+    });
+  }
+
+  void _startRound(List<MatchQuestion> questions) {
+    setState(() {
+      _questions = questions;
+      _loading = false;
       _index = 0;
       _stars = 0;
       _wrong.clear();
+      _results.clear();
+      _startedAt = DateTime.now();
       _correctId = null;
       _finished = false;
       _newBadges = const [];
@@ -84,6 +134,7 @@ class _MatchingGameScreenState extends State<MatchingGameScreen> {
     if (_correctId != null || _wrong.contains(word.id)) return;
     if (word.id == _question.target.id) {
       if (_wrong.isEmpty) _stars++;
+      _results.add(MatchAnswer(word.id, _wrong.length + 1));
       AudioService.instance.playSfx(Sfx.correct);
       setState(() => _correctId = word.id);
       _timer?.cancel();
@@ -110,6 +161,13 @@ class _MatchingGameScreenState extends State<MatchingGameScreen> {
       starsEarned: _stars,
       perfect: _stars == _questions.length,
     );
+    SyncService.instance.recordMatchRound(
+      startedAt: _startedAt,
+      durationSec: DateTime.now().difference(_startedAt).inSeconds,
+      answers: List.of(_results),
+      stars: _stars,
+      perfect: _stars == _questions.length,
+    );
     if (!mounted) return;
     setState(() {
       _finished = true;
@@ -121,6 +179,19 @@ class _MatchingGameScreenState extends State<MatchingGameScreen> {
 
   @override
   Widget build(BuildContext context) {
+    if (_loading) {
+      return Scaffold(
+        appBar: AppBar(
+          leading: IconButton(
+            iconSize: 32,
+            tooltip: 'Quay lại',
+            icon: const Icon(Icons.arrow_back_rounded),
+            onPressed: () => Navigator.of(context).maybePop(),
+          ),
+        ),
+        body: const Center(child: CircularProgressIndicator()),
+      );
+    }
     return MascotHost(
       contextKey: 'match',
       child: Scaffold(
@@ -237,6 +308,7 @@ class _MatchingGameScreenState extends State<MatchingGameScreen> {
               children: [
                 for (var i = 0; i < q.options.length; i++)
                   _OptionCard(
+                    key: ValueKey('option-${q.options[i].id}'),
                     word: q.options[i],
                     tint: _tints[i % _tints.length],
                     isCorrect: _correctId == q.options[i].id,
@@ -318,6 +390,7 @@ const _tints = [
 
 class _OptionCard extends StatefulWidget {
   const _OptionCard({
+    super.key,
     required this.word,
     required this.tint,
     required this.isCorrect,

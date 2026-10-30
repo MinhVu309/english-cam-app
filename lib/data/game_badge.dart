@@ -1,6 +1,8 @@
 import 'dart:convert';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 const String kBadgesAsset = 'assets/game/badges.json';
 
@@ -29,9 +31,18 @@ class GameBadge {
   final String description;
   final String emoji;
 
-  /// stars | rounds | perfect | found | learned
+  /// stars | rounds | perfect | found | learned | streak
   final String metric;
   final int threshold;
+
+  Map<String, dynamic> toJson() => {
+    'id': id,
+    'name': name,
+    'description': description,
+    'emoji': emoji,
+    'metric': metric,
+    'threshold': threshold,
+  };
 }
 
 class BadgeRepository {
@@ -53,9 +64,38 @@ class BadgeRepository {
     return i;
   }
 
+  static const String _kCacheKey = 'badges.catalog';
+
+  /// Ưu tiên danh sách huy hiệu máy chủ đã gửi lần trước (lưu trên máy), hỏng hoặc chưa có thì dùng bản đóng gói sẵn.
   static Future<BadgeRepository> load({AssetBundle? bundle}) async {
+    try {
+      final cached = (await SharedPreferences.getInstance()).getString(
+        _kCacheKey,
+      );
+      if (cached != null) {
+        return _instance = BadgeRepository.fromJsonString(cached);
+      }
+    } catch (e) {
+      debugPrint('Badge cache unusable, using bundled: $e');
+    }
     final raw = await (bundle ?? rootBundle).loadString(kBadgesAsset);
     return _instance = BadgeRepository.fromJsonString(raw);
+  }
+
+  /// Máy chủ gửi danh sách huy hiệu mới (Admin có thể thêm/sửa/xoá): dùng ngay và nhớ cho lần mở sau.
+  static Future<void> replace(List<GameBadge> badges) async {
+    if (badges.isEmpty) return;
+    _instance = BadgeRepository(badges);
+    try {
+      await (await SharedPreferences.getInstance()).setString(
+        _kCacheKey,
+        jsonEncode({
+          'badges': [for (final b in badges) b.toJson()],
+        }),
+      );
+    } catch (e) {
+      debugPrint('Badge cache save failed: $e');
+    }
   }
 
   final List<GameBadge> badges;

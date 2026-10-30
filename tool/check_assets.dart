@@ -74,10 +74,13 @@ void main(List<String> args) {
     }
 
     // Hình minh hoạ: ảnh asset (phải tồn tại nếu khai báo) hoặc emoji.
-    final image = w['image'] as String?;
+    // Không khai báo `image` thì app tự dùng assets/images/words/<id>.webp nếu có (xem lib/data/bundled_images.dart).
+    final conventional = File('assets/images/words/$id.webp').existsSync();
+    final image =
+        (w['image'] as String?) ?? (conventional ? 'có ảnh theo mã' : null);
     final emoji = w['emoji'] as String?;
-    if (image != null && !File(image).existsSync()) {
-      errors.add('[$id] thiếu file ảnh $image');
+    if (w['image'] != null && !File(w['image'] as String).existsSync()) {
+      errors.add('[$id] thiếu file ảnh ${w['image']}');
     }
     if (image == null && (emoji == null || emoji.isEmpty)) {
       warnings.add('[$id] không có ảnh lẫn emoji, sẽ hiện chữ cái đầu');
@@ -96,6 +99,30 @@ void main(List<String> args) {
     }
   }
 
+  // Ảnh đóng gói theo mã: mỗi file phải ứng với một từ / chủ đề thật (bắt lỗi chính tả tên file).
+  final wordIds = {for (final w in words) w['id'] as String};
+  final categoryIds = categories;
+  for (final entry in {
+    'assets/images/words': wordIds,
+    'assets/images/categories': categoryIds,
+  }.entries) {
+    final dir = Directory(entry.key);
+    if (!dir.existsSync()) continue;
+    for (final f in dir.listSync().whereType<File>()) {
+      final name = f.uri.pathSegments.last;
+      if (!name.endsWith('.webp')) {
+        errors.add('[${entry.key}] $name: ảnh phải là .webp');
+        continue;
+      }
+      final id = name.substring(0, name.length - '.webp'.length);
+      if (!entry.value.contains(id)) {
+        errors.add(
+          '[${entry.key}] $name không khớp mã từ/chủ đề nào trong vocab.json',
+        );
+      }
+    }
+  }
+
   // Game: đủ từ cho "Tìm vật" và "Nghe & chọn hình", huy hiệu hợp lệ.
   final huntCount = words
       .where((w) => w['label'] != null && w['hunt'] != false)
@@ -106,7 +133,12 @@ void main(List<String> args) {
     );
   }
   final pictureCount = words
-      .where((w) => w['image'] != null || w['emoji'] != null)
+      .where(
+        (w) =>
+            w['image'] != null ||
+            w['emoji'] != null ||
+            File('assets/images/words/${w['id']}.webp').existsSync(),
+      )
       .length;
   if (pictureCount < 4) {
     errors.add(

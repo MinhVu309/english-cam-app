@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 
+import 'bundled_images.dart';
 import 'pack/pack_manifest.dart';
 import 'pack/pack_store.dart';
 import 'vocab_word.dart';
@@ -75,6 +76,9 @@ class VocabRepository {
   }
 
   static Future<VocabRepository> load({AssetBundle? bundle}) async {
+    await BundledImages.load(
+      bundle: bundle,
+    ); // trước khi phân tích JSON: ảnh theo mã từ dùng danh sách này
     final packed = PackStore.instance?.fileFor(kPackVocabFile);
     if (packed != null) {
       try {

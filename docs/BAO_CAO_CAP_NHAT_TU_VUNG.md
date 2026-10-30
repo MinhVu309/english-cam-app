@@ -57,7 +57,7 @@ Phụ huynh bấm "Cập nhật từ vựng"
 - `tool/build_pack.dart` (mới): `init` tạo thư mục gói từ vocab hiện tại; `build` kiểm tra (thiếu trường, trùng id/label, file tham chiếu không tồn tại, model thiếu labels...) rồi ghi `manifest.json`.
 - `tool/generate_audio.py`: thêm `--pack` (chỉ đọc các từ mà vocab của gói trỏ tới file chưa có) và `--only-missing`.
 - `tool/check_assets.dart`: cho phép từ không có `label`; vẫn bắt buộc mọi nhãn model có từ vựng.
-- Tài liệu: `docs/VOCAB_PACK.md` (định dạng gói, quy trình, nâng cấp model, an toàn), cập nhật `README.md` và `CLAUDE.md`.
+- Tài liệu: `docs/VOCAB_PACK.md` (định dạng gói, quy trình, nâng cấp model, an toàn), cập nhật `README.md` và tài liệu hướng dẫn gốc của dự án.
 - Thư mục gói bản 1 ở `english-cam-ml/english-cam-pack/` (1 file `vocab.json` 25 KB + `manifest.json`, chuẩn bị đưa lên GitHub Pages).
 
 ## 4. An toàn

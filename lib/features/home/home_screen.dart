@@ -7,6 +7,8 @@ import '../../data/vocab_repository.dart';
 import '../../services/audio_service.dart';
 import '../../services/game_progress.dart';
 import '../../services/progress_service.dart';
+import '../../services/auth_service.dart';
+import '../account/account_widgets.dart';
 import '../mascot/mascot.dart';
 import '../mascot/mascot_host.dart';
 import '../settings/parent_gate.dart';
@@ -74,6 +76,7 @@ class HomeScreen extends StatelessWidget {
                   const _MusicButton(),
                 ],
               ),
+              const _ProfileChip(),
               const SizedBox(height: 10),
               const _StatsRow(),
               const SizedBox(height: 8),
@@ -327,6 +330,66 @@ class _SettingsButton extends StatelessWidget {
           Navigator.of(context).pushNamed(Routes.settings);
         }
       },
+    );
+  }
+}
+
+/// Cho biết ai đang dùng máy khi đã đăng nhập (khách thì không hiện gì):
+/// bé → hình + biệt danh; phụ huynh chưa chọn bé → nút "Chọn bé" (qua cổng phụ huynh).
+class _ProfileChip extends StatelessWidget {
+  const _ProfileChip();
+
+  @override
+  Widget build(BuildContext context) {
+    final auth = AuthService.instance;
+    return ListenableBuilder(
+      listenable: auth,
+      builder: (context, _) {
+        if (auth.isGuest) return const SizedBox.shrink();
+        final child = auth.activeChild;
+        final Widget chip;
+        if (child != null) {
+          chip = _chip(avatarEmoji(child.avatarKey), child.nickname);
+        } else {
+          chip = InkWell(
+            borderRadius: BorderRadius.circular(24),
+            onTap: () async {
+              final navigator = Navigator.of(context);
+              if (!await showParentGate(context)) return;
+              await navigator.pushNamed(auth.landingRoute);
+            },
+            child: _chip(
+              auth.isAdmin ? '🛠️' : '👨‍👩‍👧',
+              auth.isAdmin ? 'Quản trị' : 'Chọn bé',
+            ),
+          );
+        }
+        return Padding(
+          padding: const EdgeInsets.only(top: 6),
+          child: Center(child: chip),
+        );
+      },
+    );
+  }
+
+  Widget _chip(String emoji, String label) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(24),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(emoji, style: const TextStyle(fontSize: 24)),
+          const SizedBox(width: 8),
+          Text(
+            label,
+            style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w800),
+          ),
+        ],
+      ),
     );
   }
 }

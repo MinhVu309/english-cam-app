@@ -4,8 +4,13 @@ import '../../core/palette.dart';
 import '../../core/router.dart';
 import '../../services/app_settings.dart';
 import '../../services/audio_service.dart';
+import '../../services/auth_service.dart';
 import '../../services/game_progress.dart';
+import '../../services/pack_watcher.dart';
 import '../../services/progress_service.dart';
+import '../../services/sync_service.dart';
+import '../account/account_section.dart';
+import '../account/account_widgets.dart';
 import '../mascot/mascot.dart';
 
 /// Cài đặt cho bố mẹ (nằm sau cổng phụ huynh).
@@ -32,9 +37,37 @@ class SettingsScreen extends StatelessWidget {
         ],
       ),
     );
-    if (ok != true) return;
-    await ProgressService.instance.clear();
-    await GameProgress.instance.reset();
+    if (ok != true || !context.mounted) return;
+    final auth = AuthService.instance;
+    if (auth.inChildMode) {
+      // Tiến độ của bé nằm trên máy chủ: xoá ở đó, nếu không lần đồng bộ sau sẽ tải về lại.
+      final childId = auth.activeChild?.id ?? '';
+      if (!auth.isParentSignedIn || childId.isEmpty) {
+        ScaffoldMessenger.of(context)
+          ..hideCurrentSnackBar()
+          ..showSnackBar(
+            const SnackBar(
+              content: Text(
+                'Hãy đăng nhập bằng tài khoản của bố mẹ để xoá tiến độ của bé.',
+              ),
+            ),
+          );
+        return;
+      }
+      try {
+        await auth.resetChildProgress(childId);
+        await SyncService.instance.discardPendingAndHydrate();
+      } catch (e) {
+        if (!context.mounted) return;
+        ScaffoldMessenger.of(context)
+          ..hideCurrentSnackBar()
+          ..showSnackBar(SnackBar(content: Text(friendlyError(e))));
+        return;
+      }
+    } else {
+      await ProgressService.instance.clear();
+      await GameProgress.instance.reset();
+    }
     if (!context.mounted) return;
     ScaffoldMessenger.of(context)
       ..hideCurrentSnackBar()
@@ -60,6 +93,7 @@ class SettingsScreen extends StatelessWidget {
         child: ListView(
           padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
           children: [
+            const AccountSection(),
             ValueListenableBuilder<bool>(
               valueListenable: AudioService.instance.musicOn,
               builder: (context, on, _) => _Tile(
@@ -95,15 +129,39 @@ class SettingsScreen extends StatelessWidget {
               ),
             ),
             _Tile(
-              child: ListTile(
-                contentPadding: const EdgeInsets.symmetric(horizontal: 16),
-                leading: const Icon(Icons.cloud_download_outlined, size: 32),
-                title: const Text(
-                  'Cập nhật từ vựng',
-                  style: TextStyle(fontSize: 22, fontWeight: FontWeight.w700),
-                ),
-                subtitle: const Text('Tải thêm từ mới khi có mạng'),
-                onTap: () => Navigator.of(context).pushNamed(Routes.packUpdate),
+              child: ListenableBuilder(
+                listenable: PackWatcher.instance,
+                builder: (context, _) {
+                  final fresh = PackWatcher.instance.available;
+                  return ListTile(
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 16),
+                    leading: Badge(
+                      isLabelVisible: fresh != null,
+                      child: const Icon(
+                        Icons.cloud_download_outlined,
+                        size: 32,
+                      ),
+                    ),
+                    title: const Text(
+                      'Cập nhật từ vựng',
+                      style: TextStyle(
+                        fontSize: 22,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                    subtitle: fresh == null
+                        ? const Text('Tải thêm từ mới khi có mạng')
+                        : Text(
+                            'Có bản mới: bản ${fresh.version}. Bấm để cập nhật.',
+                            style: const TextStyle(
+                              color: Palette.orange,
+                              fontWeight: FontWeight.w800,
+                            ),
+                          ),
+                    onTap: () =>
+                        Navigator.of(context).pushNamed(Routes.packUpdate),
+                  );
+                },
               ),
             ),
             _Tile(
@@ -204,10 +262,13 @@ class _AboutCard extends StatelessWidget {
           ),
           SizedBox(height: 12),
           Text(
-            '• Chạy trên máy, dùng được khi không có mạng. Chỉ khi bố mẹ bấm '
-            '"Cập nhật từ vựng" app mới kết nối mạng để tải từ mới.\n'
-            '• Không quảng cáo, không thu thập hay gửi dữ liệu đi đâu. '
-            'Ảnh bé chụp chỉ được nhận diện trên máy.\n'
+            '• Cần đăng nhập một lần (bố mẹ, hoặc nhập mã liên kết trên máy của bé); sau đó học, chơi và nhận diện '
+            'vẫn dùng được khi không có mạng. App chỉ kết nối mạng khi đăng nhập, đồng bộ tiến độ '
+            'hoặc bấm "Cập nhật từ vựng".\n'
+            '• Không quảng cáo. Ảnh bé chụp chỉ được nhận diện trên máy, không bao giờ gửi đi. '
+            'Khi bé hoặc bố mẹ sửa kết quả nhận diện sai, app gửi tên từ đúng (chỉ chữ, không có ảnh) để nhóm cải thiện app. '
+            'Nếu bố mẹ đăng nhập, chỉ gửi dữ liệu học tối thiểu (biệt danh, từ đã học, kết quả chơi), '
+            'bố mẹ xoá được bất cứ lúc nào.\n'
             '• Nhận diện đồ vật bằng mô hình MobileNetV2; có thể nhận nhầm, '
             'bé luôn có thể chọn lại.',
             style: TextStyle(fontSize: 18, height: 1.4, color: Palette.inkSoft),

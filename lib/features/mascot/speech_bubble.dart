@@ -21,19 +21,24 @@ class SpeechBubble extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ConstrainedBox(
-      constraints: BoxConstraints(maxWidth: maxWidth),
-      child: CustomPaint(
-        painter: _BubblePainter(tailOnRight),
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(16, 12, 16, 12 + _tail),
-          child: Text(
-            text,
-            style: const TextStyle(
-              fontSize: 18,
-              height: 1.25,
-              fontWeight: FontWeight.w700,
-              color: Palette.ink,
+    // Material trong suốt: bong bóng nằm trong lớp phủ của MascotHost, ngoài Scaffold của màn hình, nên nếu không có
+    // nó thì chữ mất kiểu của theme (đổi font, và bản debug còn gạch chân vàng).
+    return Material(
+      type: MaterialType.transparency,
+      child: ConstrainedBox(
+        constraints: BoxConstraints(maxWidth: maxWidth),
+        child: CustomPaint(
+          painter: _BubblePainter(tailOnRight),
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(16, 12, 16, 12 + _tail),
+            child: Text(
+              text,
+              style: const TextStyle(
+                fontSize: 18,
+                height: 1.25,
+                fontWeight: FontWeight.w700,
+                color: Palette.ink,
+              ),
             ),
           ),
         ),

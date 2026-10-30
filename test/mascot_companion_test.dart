@@ -207,4 +207,21 @@ void main() {
     expect(AppSettings.instance.mascotChatter, isFalse);
     await AppSettings.instance.setMascotChatter(true);
   });
+
+  testWidgets('bong bóng có Material phía trên dù nằm ngoài Scaffold (nếu không chữ mất kiểu của theme)', (tester) async {
+    // Không bọc Scaffold/Material nào, giống lớp phủ của MascotHost.
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: buildAppTheme(),
+        builder: (context, child) => Directionality(
+          textDirection: TextDirection.ltr,
+          child: Align(alignment: Alignment.bottomLeft, child: const SpeechBubble(text: 'Xin chào bé!', tailOnRight: false)),
+        ),
+      ),
+    );
+    final text = find.text('Xin chào bé!');
+    expect(find.ancestor(of: text, matching: find.byType(Material)), findsWidgets);
+    expect(tester.widget<DefaultTextStyle>(find.ancestor(of: text, matching: find.byType(DefaultTextStyle)).first).style.decoration,
+        isNot(TextDecoration.underline));
+  });
 }

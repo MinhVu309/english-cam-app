@@ -1,11 +1,14 @@
 import 'dart:ui' show Color;
 
+import 'bundled_images.dart';
+
 class VocabCategory {
   const VocabCategory({
     required this.id,
     required this.vi,
     required this.en,
     this.emoji,
+    this.image,
     this.color,
   });
 
@@ -14,6 +17,8 @@ class VocabCategory {
     vi: j['vi'] as String,
     en: j['en'] as String,
     emoji: j['emoji'] as String?,
+    image:
+        j['image'] as String? ?? BundledImages.categoryPath(j['id'] as String),
     color: _parseColor(j['color'] as String?),
   );
 
@@ -21,6 +26,9 @@ class VocabCategory {
   final String vi;
   final String en;
   final String? emoji;
+
+  /// Ảnh đại diện chủ đề (asset đóng gói sẵn theo mã chủ đề); null thì dùng [emoji].
+  final String? image;
 
   /// Màu pastel của chủ đề (từ vocab.json), dùng tô thẻ từ.
   final Color? color;
@@ -61,7 +69,7 @@ class VocabWord {
     audio: j['audio'] as String,
     exampleAudio: j['exampleAudio'] as String?,
     category: j['category'] as String,
-    image: j['image'] as String?,
+    image: j['image'] as String? ?? BundledImages.wordPath(j['id'] as String),
     emoji: j['emoji'] as String?,
     // Từ không nhận diện được thì không thể làm đích của game "Tìm vật".
     hunt: j['label'] != null && (j['hunt'] as bool? ?? true),
@@ -85,7 +93,8 @@ class VocabWord {
   final String? exampleAudio;
   final String category;
 
-  /// Ảnh minh hoạ (cùng quy ước đường dẫn như [audio]). Nếu không có thì dùng [emoji], cuối cùng là chữ cái.
+  /// Ảnh minh hoạ (cùng quy ước đường dẫn như [audio]); không khai báo thì lấy ảnh đóng gói sẵn theo mã từ
+  /// ([BundledImages.wordPath]). Nếu vẫn không có thì dùng [emoji], cuối cùng là chữ cái.
   final String? image;
   final String? emoji;
 
